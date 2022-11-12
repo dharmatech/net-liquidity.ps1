@@ -1,3 +1,4 @@
+# net-liquidity.ps1
 
 PowerShell script to calculate [Net Liquidity](https://gist.github.com/dharmatech/c2dc1154167f3d1aed003aba7628a41e).
 
