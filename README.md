@@ -5,15 +5,25 @@ PowerShell script to calculate [Net Liquidity](https://gist.github.com/dharmatec
 
 # Screenshots
 
+## Change Table
+
 When you run this script, the change table will appear on the console:
 
 ![image](https://user-images.githubusercontent.com/20816/201480445-07a53489-58ff-4b27-ac56-f8a057084e6f.png)
 
 The `SPX FV` column is the SPX Fair Value.
 
+Green indicates an increase in Net Liquidity.
+
+Red indicates a decrease in Net Liquidity.
+
+## Net Liquidity chart
+
 A chart for Net Liquidity will open in a browser:
 
 ![image](https://user-images.githubusercontent.com/20816/201480455-9e653277-ef0f-46e7-876d-34b22a1151e2.png)
+
+## SPX Fair Value chart
 
 A chart for SPX, SPX fair value, and the SPX fair value bands will open in a browser:
 
