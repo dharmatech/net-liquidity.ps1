@@ -39,7 +39,7 @@ $fed = get-recent-walcl
 $sp  = get-sp500
 
 $tga_sorted = $tga.data            | Sort-Object record_date
-$rrp_sorted = $rrp.repo.operations | Sort-Object operationDate
+$rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise'
 $fed_sorted = $fed                 | Sort-Object DATE
 $sp_sorted  = $sp                  | Sort-Object DATE
 
