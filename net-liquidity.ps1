@@ -38,6 +38,12 @@ $rrp = get-recent-reverse-repo
 $fed = get-recent-walcl
 $sp  = get-sp500
 
+if ($rrp.GetType().Name -eq 'String')
+{
+    Write-Host 'Issue contacting markets.newyorkfed.org' -ForegroundColor Yellow
+    exit 
+}
+
 $tga_sorted = $tga.data            | Sort-Object record_date
 $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise'
 $fed_sorted = $fed                 | Sort-Object DATE
