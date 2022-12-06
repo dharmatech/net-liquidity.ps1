@@ -116,13 +116,21 @@ foreach ($elt in $table | Select-Object -Skip 1)
     Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $rrp_change.ToString('N0')) -ForegroundColor $rrp_color -NoNewline
     Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $tga_change.ToString('N0')) -ForegroundColor $tga_color -NoNewline
     Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0')) -NoNewline; Write-Host ('{0,20}' -f $nl_change.ToString('N0'))  -ForegroundColor $nl_color  -NoNewline
-    Write-Host ('{0,10}' -f $elt.spx_fv)
+    Write-Host ('{0,7}' -f $elt.spx_low) -NoNewline
+    Write-Host ('{0,7}' -f $elt.spx_fv)  -NoNewline
+    Write-Host ('{0,7}' -f $elt.spx_high)
     
     $prev = $elt
 }
 
 #           2022-10-25    8,743,922,000,000                   0   2,195,616,000,000     -46,428,000,000     636,785,000,000                   0   5,911,521,000,000      46,428,000,000      3749
-Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
+
+#           2022-12-06    8,584,576,000,000                   0   2,111,465,000,000      17,818,000,000     440,836,000,000                   0   6,032,275,000,000     -17,818,000,000      3709   3859   4209
+Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE   SPX LOW   FAIR   HIGH'
+
+
+
+
 
 # ----------------------------------------------------------------------
 
