@@ -125,8 +125,8 @@ foreach ($elt in $table | Select-Object -Skip 1)
 
 #           2022-10-25    8,743,922,000,000                   0   2,195,616,000,000     -46,428,000,000     636,785,000,000                   0   5,911,521,000,000      46,428,000,000      3749
 
-#           2022-12-06    8,584,576,000,000                   0   2,111,465,000,000      17,818,000,000     440,836,000,000                   0   6,032,275,000,000     -17,818,000,000      3709   3859   4209
-Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE   SPX LOW   FAIR   HIGH'
+#           2022-12-06    8,584,576,000,000                   0   2,111,465,000,000      17,818,000,000     440,836,000,000                   0   6,032,275,000,000     -17,818,000,000   3709   3859   4209
+Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE   LOW    FAIR   HIGH'
 
 
 
