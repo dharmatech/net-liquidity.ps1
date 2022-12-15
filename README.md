@@ -45,3 +45,21 @@ Let me know if you test it on macOS.
 So it's usually best to run the script once a day after 4:00 PM Eastern.
 
 TGA is reported for the previous day. So in general, only the previous day's Net Liquidity will be fully known. The script will still display the current day's preliminary Net Liquidity value which will include RRP and WALCL if updates for them are available.
+
+# Downloading the script
+
+Go to this page:
+
+https://github.com/dharmatech/net-liquidity.ps1/blob/master/net-liquidity.ps1
+
+Right-click **Raw** and select **Save link as...**:
+
+![image](https://user-images.githubusercontent.com/20816/207929209-0edf4c12-1ece-44af-8640-0acf4621e452.png)
+
+If you're on Windows, you may have to unblock the file from a PowerShell console:
+
+    Unblock-File .\net-liquidity.ps1
+
+Run the file at a PowerShell prompt:
+
+    .\net-liquidity.ps1
