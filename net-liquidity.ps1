@@ -1,5 +1,5 @@
 ﻿
-$days = 365
+Param($days = 365)
 
 function get-recent-tga ()
 {
@@ -182,3 +182,11 @@ $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/creat
 $id = ([System.Uri] $result.url).Segments[-1]
 
 Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+
+exit
+
+# ----------------------------------------------------------------------
+# Example invocations
+# ----------------------------------------------------------------------
+
+. .\net-liquidity.ps1 -days 90
