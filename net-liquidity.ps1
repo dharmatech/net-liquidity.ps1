@@ -1,5 +1,5 @@
 ﻿
-Param($days = 365)
+Param($days = 365, [switch]$csv)
 
 function get-recent-tga ()
 {
@@ -129,6 +129,13 @@ Write-Host 'DATE                      WALCL              CHANGE                 
 
 # ----------------------------------------------------------------------
 
+if ($csv)
+{
+    $table | Export-Csv ('net-liquidity-{0}.csv' -f (Get-Date -Format 'yyyy-MM-dd')) -NoTypeInformation
+}
+
+# ----------------------------------------------------------------------
+
 $json = @{
     chart = @{
         type = 'bar'
@@ -190,3 +197,5 @@ exit
 # ----------------------------------------------------------------------
 
 . .\net-liquidity.ps1 -days 90
+
+. .\net-liquidity.ps1 -csv
