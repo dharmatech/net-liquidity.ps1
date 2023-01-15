@@ -1,29 +1,11 @@
 ﻿
 $days = 365
 
-# $result = Invoke-RestMethod -Method Get -Uri ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=300' -f $date)
-
-# $result = Invoke-RestMethod -Method Get -Uri ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=300' -f '2022-01-01')
-
-# $result = Invoke-RestMethod -Method Get -Uri (
-#     ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?' + 
-#     'filter=record_date:gte:{0}' + 
-#     # ',account_type:eq:Treasury General Account (TGA) Closing Balance' + 
-#     ',account_type:eq:Treasury General Account (TGA)' + 
-#     # '&fields=record_date,open_today_bal' +
-#     '&page[number]=1&page[size]=300') -f '2022-01-01')
-
 function get-recent-tga ()
 {
-    # $date = (Get-Date).AddDays(-4*30).ToString('yyyy-MM-dd')
-
     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
-
-    # $result = Invoke-RestMethod -Method Get -Uri ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal' -f $date)
-
+    
     $result = Invoke-RestMethod -Method Get -Uri ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=300' -f $date)
-
-    # &page[number]=1&page[size]=300
 
     $result
 }
