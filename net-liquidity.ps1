@@ -104,6 +104,11 @@ $table = foreach ($date in $dates)
 
 # ----------------------------------------------------------------------
 
+function format-as-billions ($val)
+{
+    ($val / 1000 / 1000 / 1000).ToString('N0')
+}
+
 $prev = $table[0]
 
 foreach ($elt in $table | Select-Object -Skip 1)
@@ -120,10 +125,16 @@ foreach ($elt in $table | Select-Object -Skip 1)
     
     Write-Host $elt.date -NoNewline; Write-Host ' ' -NoNewline
        
-    Write-Host ('{0,20}' -f $elt.fed.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $fed_change.ToString('N0')) -ForegroundColor $fed_color -NoNewline
-    Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $rrp_change.ToString('N0')) -ForegroundColor $rrp_color -NoNewline
-    Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $tga_change.ToString('N0')) -ForegroundColor $tga_color -NoNewline
-    Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0')) -NoNewline; Write-Host ('{0,20}' -f $nl_change.ToString('N0'))  -ForegroundColor $nl_color  -NoNewline
+    # Write-Host ('{0,20}' -f $elt.fed.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $fed_change.ToString('N0')) -ForegroundColor $fed_color -NoNewline
+    # Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $rrp_change.ToString('N0')) -ForegroundColor $rrp_color -NoNewline
+    # Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $tga_change.ToString('N0')) -ForegroundColor $tga_color -NoNewline
+    # Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0')) -NoNewline; Write-Host ('{0,20}' -f $nl_change.ToString('N0'))  -ForegroundColor $nl_color  -NoNewline
+
+    Write-Host ('{0,7}' -f (format-as-billions $elt.fed))           -NoNewline; Write-Host ('{0,5}' -f (format-as-billions $fed_change)) -ForegroundColor $fed_color -NoNewline
+    Write-Host ('{0,7}' -f (format-as-billions $elt.rrp))           -NoNewline; Write-Host ('{0,5}' -f (format-as-billions $rrp_change)) -ForegroundColor $rrp_color -NoNewline
+    Write-Host ('{0,7}' -f (format-as-billions $elt.tga))           -NoNewline; Write-Host ('{0,5}' -f (format-as-billions $tga_change)) -ForegroundColor $tga_color -NoNewline
+    Write-Host ('{0,7}' -f (format-as-billions $elt.net_liquidity)) -NoNewline; Write-Host ('{0,5}' -f (format-as-billions $nl_change))  -ForegroundColor $nl_color  -NoNewline    
+
     Write-Host ('{0,10}' -f $elt.spx_fv)
     
     $prev = $elt
