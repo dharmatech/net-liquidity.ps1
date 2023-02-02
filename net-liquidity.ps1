@@ -198,6 +198,64 @@ $id = ([System.Uri] $result.url).Segments[-1]
 
 Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
 
+# ----------------------------------------------------------------------
+# stacked
+# ----------------------------------------------------------------------
+
+$json = @{
+    chart = @{
+        type = 'line'
+        data = @{
+            labels = $table.ForEach({ $_.date })
+            datasets = @(
+                                
+                # @{ label = 'Net Liquidity'; data = $table.ForEach({ $_.net_liquidity    }); pointRadius = 0 }
+                # @{ label = 'TGA';           data = $table.ForEach({ $_.tga    })          ; pointRadius = 0 }
+                # @{ label = 'RRP';           data = $table.ForEach({ $_.rrp    })          ; pointRadius = 0 }
+                
+                @{ label = 'Net Liquidity'; data = $table.ForEach({ $_.net_liquidity    }); pointRadius = 0 }
+                @{ label = 'RRP';           data = $table.ForEach({ $_.rrp    })          ; pointRadius = 0 }
+                @{ label = 'TGA';           data = $table.ForEach({ $_.tga    })          ; pointRadius = 0 }
+
+                # @{ label = 'WALCL';         data = $table.ForEach({ $_.fed    })          ; pointRadius = 0 }
+                # @{ label = 'RRP';           data = $table.ForEach({ $_.rrp    })          ; pointRadius = 0 }
+                # @{ label = 'TGA';           data = $table.ForEach({ $_.tga    })          ; pointRadius = 0 }
+                # @{ label = 'Net Liquidity'; data = $table.ForEach({ $_.net_liquidity    }); pointRadius = 0 }
+
+
+                # @{ label = 'SPX';        data = $table.ForEach({ $_.spx    }) },
+                # @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv }) },
+                # @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) },
+                # @{ label = 'High';       data = $table.ForEach({ $_.spx_high }) }
+            )
+        }
+        options = @{
+            scales = @{ 
+                xAxes = @(
+                    @{ stacked = $true }
+                    )
+                yAxes = @(@{
+                    stacked = $true
+
+                    ticks = @{ min = 5500000000000.0 }
+                })
+            }
+        }
+    }
+} | ConvertTo-Json -Depth 100
+
+$result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/create' -Body $json -ContentType 'application/json'
+
+# $result
+
+# Start-Process $result.url
+
+$id = ([System.Uri] $result.url).Segments[-1]
+
+Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+
+# ----------------------------------------------------------------------
+
 exit
 
 # ----------------------------------------------------------------------
