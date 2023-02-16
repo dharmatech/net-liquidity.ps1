@@ -147,10 +147,10 @@ $json = @{
         data = @{
             labels = $table.ForEach({ $_.date })
             datasets = @(
-                @{
-                    label = 'Net Liquidity (trillions USD)'
-                    data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 })
-                }
+                @{ label = 'Net Liquidity (trillions USD)'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
+                @{ label = 'FED';                           data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'RRP';                           data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'TGA';                           data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
             )
         }
         options = @{
