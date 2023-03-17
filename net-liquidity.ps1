@@ -26,6 +26,13 @@ function get-recent-walcl ()
     $result | ConvertFrom-Csv
 }
 
+function get-recent-wshosho ()
+{
+    $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WSHOSHO'
+
+    $result | ConvertFrom-Csv
+}
+
 function get-sp500 ()
 {
     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
@@ -37,7 +44,7 @@ function get-sp500 ()
 
 $tga = get-recent-tga
 $rrp = get-recent-reverse-repo
-$fed = get-recent-walcl
+$fed = get-recent-wshosho
 $sp  = get-sp500
 
 if ($rrp.GetType().Name -eq 'String')
@@ -74,7 +81,8 @@ $table = foreach ($date in $dates)
     $fed_record = $fed_sorted.Where({ $_.DATE          -le $date }, 'Last')[0]
     $sp_record  = $sp_sorted.Where( { $_.DATE          -le $date }, 'Last')[0]
 
-    $fed = [decimal] $fed_record.WALCL * 1000 * 1000
+    # $fed = [decimal] $fed_record.WALCL * 1000 * 1000
+    $fed = [decimal] $fed_record.WSHOSHO * 1000 * 1000
     $rrp = [decimal] $rrp_record.totalAmtAccepted
     $tga = [decimal] $tga_record.open_today_bal * 1000 * 1000
 
@@ -82,11 +90,16 @@ $table = foreach ($date in $dates)
 
     $spx = [math]::Round($sp_record.SP500, 0)
 
-    $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 / 1.1 - 1625, 0)
+    # $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 / 1.1 - 1625, 0)
 
-    $spx_low = $spx_fv - 150
-    $spx_high = $spx_fv + 350
+    # $spx_low = $spx_fv - 150
+    # $spx_high = $spx_fv + 350
    
+    $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 - 1700, 0)
+    
+    $spx_high = $spx_fv + 300
+    $spx_low  = $spx_fv - 300
+
     [pscustomobject]@{
         date = $date
         fed = $fed
@@ -130,7 +143,8 @@ foreach ($elt in $table | Select-Object -Skip 1)
 }
 
 #           2022-10-25    8,743,922,000,000                   0   2,195,616,000,000     -46,428,000,000     636,785,000,000                   0   5,911,521,000,000      46,428,000,000      3749
-Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
+# Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
+Write-Host 'DATE                    WSHOSHO              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
 
 # ----------------------------------------------------------------------
 
@@ -147,13 +161,14 @@ $json = @{
         data = @{
             labels = $table.ForEach({ $_.date })
             datasets = @(
-                @{ label = 'Net Liquidity (trillions USD)'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
-                @{ label = 'FED';                           data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-                @{ label = 'RRP';                           data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-                @{ label = 'TGA';                           data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
+                @{ label = 'FED';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
             )
         }
         options = @{
+            title = @{ display = $true; text = 'Net Liquidity Components (trillions USD)' }
             scales = @{ }
         }
     }
@@ -183,7 +198,7 @@ $json = @{
         }
         options = @{
             
-            # title = @{ display = $true; text = 'SPX Fair Value' }
+            title = @{ display = $true; text = 'SPX Fair Value (NLSHO based)' }
 
             scales = @{ }
         }
