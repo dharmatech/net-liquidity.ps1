@@ -26,6 +26,13 @@ function get-recent-walcl ()
     $result | ConvertFrom-Csv
 }
 
+function get-recent-wshosho ()
+{
+    $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WSHOSHO'
+
+    $result | ConvertFrom-Csv
+}
+
 function get-sp500 ()
 {
     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
@@ -35,10 +42,11 @@ function get-sp500 ()
     $result | ConvertFrom-Csv | Where-Object SP500 -NE '.'
 }
 
-$tga = get-recent-tga
-$rrp = get-recent-reverse-repo
-$fed = get-recent-walcl
-$sp  = get-sp500
+$tga     = get-recent-tga
+$rrp     = get-recent-reverse-repo
+$fed     = get-recent-walcl
+$sho     = get-recent-wshosho
+$sp      = get-sp500
 
 if ($rrp.GetType().Name -eq 'String')
 {
@@ -50,11 +58,12 @@ $tga_sorted = $tga.data            | Sort-Object record_date
 # $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise'
 $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
 $fed_sorted = $fed                 | Sort-Object DATE
+$sho_sorted = $sho                 | Sort-Object DATE
 $sp_sorted  = $sp                  | Sort-Object DATE
 
 $tga_dates = $tga.data            | ForEach-Object { $_.record_date }
-$rrp_dates = $rrp.repo.operations | ForEach-Object { $_.operationDate }
-$fed_dates = $fed                 | ForEach-Object { $_.DATE }
+# $rrp_dates = $rrp.repo.operations | ForEach-Object { $_.operationDate }
+# $fed_dates = $fed                 | ForEach-Object { $_.DATE }
 
 $earliest = ($tga_dates | Sort-Object)[0]
 
@@ -62,6 +71,7 @@ $dates =
     @($tga.data            | ForEach-Object { $_.record_date   }) +
     @($rrp.repo.operations | ForEach-Object { $_.operationDate }) +
     @($fed                 | ForEach-Object { $_.DATE          }) +
+    @($sho                 | ForEach-Object { $_.DATE          }) +
     @($sp                  | ForEach-Object { $_.DATE          }) | 
     Sort-Object | 
     Select-Object -Unique | 
@@ -72,13 +82,17 @@ $table = foreach ($date in $dates)
     $tga_record = $tga_sorted.Where({ $_.record_date   -le $date }, 'Last')[0]
     $rrp_record = $rrp_sorted.Where({ $_.operationDate -le $date }, 'Last')[0]
     $fed_record = $fed_sorted.Where({ $_.DATE          -le $date }, 'Last')[0]
+    $sho_record = $sho_sorted.Where({ $_.DATE          -le $date }, 'Last')[0]
     $sp_record  = $sp_sorted.Where( { $_.DATE          -le $date }, 'Last')[0]
 
-    $fed = [decimal] $fed_record.WALCL * 1000 * 1000
+    $fed = [decimal] $fed_record.WALCL            * 1000 * 1000
+    $sho = [decimal] $sho_record.WSHOSHO          * 1000 * 1000
     $rrp = [decimal] $rrp_record.totalAmtAccepted
-    $tga = [decimal] $tga_record.open_today_bal * 1000 * 1000
+    $tga = [decimal] $tga_record.open_today_bal   * 1000 * 1000
 
     $net_liquidity = $fed - $tga - $rrp
+
+    $nl_sho = $sho - $tga - $rrp
 
     $spx = [math]::Round($sp_record.SP500, 0)
 
@@ -90,10 +104,12 @@ $table = foreach ($date in $dates)
     [pscustomobject]@{
         date = $date
         fed = $fed
+        sho = $sho
         rrp = $rrp
         tga = $tga
 
         net_liquidity = $net_liquidity
+        nl_sho        = $nl_sho
 
         spx      = $spx
         spx_fv   = $spx_fv
@@ -114,6 +130,7 @@ foreach ($elt in $table | Select-Object -Skip 1)
     # $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
 
     $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
+    $sho_change = $elt.fed           - $prev.fed;            $sho_color = if ($sho_change -gt 0) { 'Green' } elseif ($sho_change -lt 0) { 'Red'   } else { 'White' }
     $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' }
     $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = if ($rrp_change -gt 0) { 'Green' } elseif ($rrp_change -lt 0) { 'Red' }   else { 'White' }
     $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
@@ -121,6 +138,7 @@ foreach ($elt in $table | Select-Object -Skip 1)
     Write-Host $elt.date -NoNewline; Write-Host ' ' -NoNewline
        
     Write-Host ('{0,20}' -f $elt.fed.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $fed_change.ToString('N0')) -ForegroundColor $fed_color -NoNewline
+    Write-Host ('{0,20}' -f ($elt.sho / 1000 / 1000 / 1000).ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $sho_change.ToString('N0')) -ForegroundColor $sho_color -NoNewline
     Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $rrp_change.ToString('N0')) -ForegroundColor $rrp_color -NoNewline
     Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $tga_change.ToString('N0')) -ForegroundColor $tga_color -NoNewline
     Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0')) -NoNewline; Write-Host ('{0,20}' -f $nl_change.ToString('N0'))  -ForegroundColor $nl_color  -NoNewline
