@@ -98,7 +98,9 @@ $table = foreach ($date in $dates)
     $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 - 1700, 0)
     
     $spx_high = $spx_fv + 300
-    $spx_low  = $spx_fv - 300
+    # $spx_low  = $spx_fv - 300
+    # $spx_low  = $spx_fv - 250
+    $spx_low  = $spx_fv - 200
 
     [pscustomobject]@{
         date = $date
@@ -162,7 +164,7 @@ $json = @{
             labels = $table.ForEach({ $_.date })
             datasets = @(
                 @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
-                @{ label = 'FED';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'SHO';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
                 @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
                 @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
             )
@@ -192,8 +194,8 @@ $json = @{
             datasets = @(
                 @{ label = 'SPX';        data = $table.ForEach({ $_.spx    }) },
                 @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv }) },
-                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) },
-                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }) }
+                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) ; borderColor = '#62ae67' },
+                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); borderColor = '#f06464' }
             )
         }
         options = @{
