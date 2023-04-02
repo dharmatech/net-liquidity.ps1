@@ -118,7 +118,26 @@ $table = foreach ($date in $dates)
 }
 
 # ----------------------------------------------------------------------
+# function days-in-month ($date)
+# {
+#     [datetime]::DaysInMonth((Get-Date $date -Format 'yyyy'), (Get-Date $date -Format 'MM'))
+# }
 
+# function within-last-days-of-month ($date, $n)
+# {
+#     ((days-in-month $date) - (Get-Date $date -Format 'dd')) -lt $n
+# }
+
+function rrp-color ($date, $rrp_change)
+{
+    if ($rrp_change -gt 0)
+    {
+        if ((days-in-month $date) - (Get-Date $date -Format 'dd') -lt 3) { 'Yellow' } else { 'Green' }
+    }
+    elseif ($rrp_change -lt 0) { 'Red' }
+    else { 'White' }
+}
+# ----------------------------------------------------------------------
 $prev = $table[0]
 
 foreach ($elt in $table | Select-Object -Skip 1)
@@ -130,7 +149,12 @@ foreach ($elt in $table | Select-Object -Skip 1)
 
     $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
     $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' }
-    $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = if ($rrp_change -gt 0) { 'Green' } elseif ($rrp_change -lt 0) { 'Red' }   else { 'White' }
+    
+    # $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = if ($rrp_change -gt 0) { 'Green' } elseif ($rrp_change -lt 0) { 'Red' }   else { 'White' }
+
+    $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
+
+
     $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
     
     Write-Host $elt.date -NoNewline; Write-Host ' ' -NoNewline
@@ -224,3 +248,8 @@ exit
 . .\net-liquidity.ps1 -days 90
 
 . .\net-liquidity.ps1 -csv
+
+# ----------------------------------------------------------------------
+
+
+
