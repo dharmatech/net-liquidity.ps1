@@ -118,10 +118,10 @@ $table = foreach ($date in $dates)
 }
 
 # ----------------------------------------------------------------------
-# function days-in-month ($date)
-# {
-#     [datetime]::DaysInMonth((Get-Date $date -Format 'yyyy'), (Get-Date $date -Format 'MM'))
-# }
+function days-in-month ($date)
+{
+    [datetime]::DaysInMonth((Get-Date $date -Format 'yyyy'), (Get-Date $date -Format 'MM'))
+}
 
 # function within-last-days-of-month ($date, $n)
 # {
