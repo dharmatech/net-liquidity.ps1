@@ -175,15 +175,15 @@ $json = @{
         data = @{
             labels = $table.ForEach({ $_.date })
             datasets = @(
-                @{ label = 'SPX';        data = $table.ForEach({ $_.spx    }) },
-                @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv }) },
-                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) },
-                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }) }
+                @{ label = 'SPX';        data = $table.ForEach({ $_.spx    })   },
+                @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv })   },
+                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) ; borderColor = '#62ae67' },
+                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); borderColor = '#f06464' }
             )
         }
         options = @{
             
-            # title = @{ display = $true; text = 'SPX Fair Value' }
+            title = @{ display = $true; text = 'SPX Fair Value (WALCL based)' }
 
             scales = @{ }
         }
