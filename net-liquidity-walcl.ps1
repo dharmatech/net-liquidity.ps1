@@ -87,13 +87,6 @@ $table = foreach ($date in $dates)
     $spx_low = $spx_fv - 150
     $spx_high = $spx_fv + 350
    
-    $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 - 1700, 0)
-    
-    $spx_high = $spx_fv + 300
-    # $spx_low  = $spx_fv - 300
-    # $spx_low  = $spx_fv - 250
-    $spx_low  = $spx_fv - 200
-
     [pscustomobject]@{
         date = $date
         fed = $fed
@@ -110,26 +103,7 @@ $table = foreach ($date in $dates)
 }
 
 # ----------------------------------------------------------------------
-function days-in-month ($date)
-{
-    [datetime]::DaysInMonth((Get-Date $date -Format 'yyyy'), (Get-Date $date -Format 'MM'))
-}
 
-# function within-last-days-of-month ($date, $n)
-# {
-#     ((days-in-month $date) - (Get-Date $date -Format 'dd')) -lt $n
-# }
-
-function rrp-color ($date, $rrp_change)
-{
-    if ($rrp_change -gt 0)
-    {
-        if ((days-in-month $date) - (Get-Date $date -Format 'dd') -lt 3) { 'Yellow' } else { 'Green' }
-    }
-    elseif ($rrp_change -lt 0) { 'Red' }
-    else { 'White' }
-}
-# ----------------------------------------------------------------------
 $prev = $table[0]
 
 foreach ($elt in $table | Select-Object -Skip 1)
@@ -141,12 +115,7 @@ foreach ($elt in $table | Select-Object -Skip 1)
 
     $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
     $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' }
-    
-    # $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = if ($rrp_change -gt 0) { 'Green' } elseif ($rrp_change -lt 0) { 'Red' }   else { 'White' }
-
-    $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
-
-
+    $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = if ($rrp_change -gt 0) { 'Green' } elseif ($rrp_change -lt 0) { 'Red' }   else { 'White' }
     $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
     
     Write-Host $elt.date -NoNewline; Write-Host ' ' -NoNewline
@@ -178,10 +147,10 @@ $json = @{
         data = @{
             labels = $table.ForEach({ $_.date })
             datasets = @(
-                @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
-                @{ label = 'SHO';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-                @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-                @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'Net Liquidity (trillions USD)'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
+                @{ label = 'FED';                           data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'RRP';                           data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'TGA';                           data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
             )
         }
         options = @{
@@ -208,8 +177,8 @@ $json = @{
             datasets = @(
                 @{ label = 'SPX';        data = $table.ForEach({ $_.spx    }) },
                 @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv }) },
-                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) ; borderColor = '#62ae67' },
-                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); borderColor = '#f06464' }
+                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) },
+                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }) }
             )
         }
         options = @{
@@ -238,8 +207,3 @@ exit
 . .\net-liquidity.ps1 -days 90
 
 . .\net-liquidity.ps1 -csv
-
-# ----------------------------------------------------------------------
-
-
-
