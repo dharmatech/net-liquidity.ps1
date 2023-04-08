@@ -42,10 +42,31 @@ function get-sp500 ()
     $result | ConvertFrom-Csv | Where-Object SP500 -NE '.'
 }
 
+# function get-unrate ()
+# {
+#     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
+
+#     # $result = Invoke-RestMethod ('https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE&cosd={0}' -f $date)
+
+#     $result = Invoke-RestMethod ('https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE&cosd={0}&transformation=chg' -f $date)
+    
+#     $result | ConvertFrom-Csv | Where-Object UNRATE -NE '.'
+# }
+
+function get-unrate-chg ()
+{
+    $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
+    
+    $result = Invoke-RestMethod ('https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE&cosd={0}&transformation=chg' -f $date)
+    
+    $result | ConvertFrom-Csv | Where-Object UNRATE -NE '.'
+}
+
 $tga = get-recent-tga
 $rrp = get-recent-reverse-repo
 $fed = get-recent-wshosho
 $sp  = get-sp500
+$unrate_chg = get-unrate-chg
 
 if ($rrp.GetType().Name -eq 'String')
 {
@@ -58,10 +79,11 @@ $tga_sorted = $tga.data            | Sort-Object record_date
 $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
 $fed_sorted = $fed                 | Sort-Object DATE
 $sp_sorted  = $sp                  | Sort-Object DATE
+$unrate_chg_sorted = $unrate_chg           | Sort-Object DATE
 
 $tga_dates = $tga.data            | ForEach-Object { $_.record_date }
-$rrp_dates = $rrp.repo.operations | ForEach-Object { $_.operationDate }
-$fed_dates = $fed                 | ForEach-Object { $_.DATE }
+# $rrp_dates = $rrp.repo.operations | ForEach-Object { $_.operationDate }
+# $fed_dates = $fed                 | ForEach-Object { $_.DATE }
 
 $earliest = ($tga_dates | Sort-Object)[0]
 
@@ -69,17 +91,19 @@ $dates =
     @($tga.data            | ForEach-Object { $_.record_date   }) +
     @($rrp.repo.operations | ForEach-Object { $_.operationDate }) +
     @($fed                 | ForEach-Object { $_.DATE          }) +
-    @($sp                  | ForEach-Object { $_.DATE          }) | 
+    @($sp                  | ForEach-Object { $_.DATE          }) +
+    @($unrate_chg          | ForEach-Object { $_.DATE          }) | 
     Sort-Object | 
     Select-Object -Unique | 
     Where-Object { $_ -ge $earliest }
 
 $table = foreach ($date in $dates)
 {
-    $tga_record = $tga_sorted.Where({ $_.record_date   -le $date }, 'Last')[0]
-    $rrp_record = $rrp_sorted.Where({ $_.operationDate -le $date }, 'Last')[0]
-    $fed_record = $fed_sorted.Where({ $_.DATE          -le $date }, 'Last')[0]
-    $sp_record  = $sp_sorted.Where( { $_.DATE          -le $date }, 'Last')[0]
+    $tga_record        = $tga_sorted.Where(        { $_.record_date   -le $date }, 'Last')[0]
+    $rrp_record        = $rrp_sorted.Where(        { $_.operationDate -le $date }, 'Last')[0]
+    $fed_record        = $fed_sorted.Where(        { $_.DATE          -le $date }, 'Last')[0]
+    $sp_record         = $sp_sorted.Where(         { $_.DATE          -le $date }, 'Last')[0]
+    $unrate_chg_record = $unrate_chg_sorted.Where( { $_.DATE          -le $date }, 'Last')[0]
 
     # $fed = [decimal] $fed_record.WALCL * 1000 * 1000
     $fed = [decimal] $fed_record.WSHOSHO * 1000 * 1000
@@ -89,6 +113,8 @@ $table = foreach ($date in $dates)
     $net_liquidity = $fed - $tga - $rrp
 
     $spx = [math]::Round($sp_record.SP500, 0)
+
+    $unrate_chg = [decimal] $unrate_chg_record.UNRATE_CHG
 
     # $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 / 1.1 - 1625, 0)
 
@@ -114,6 +140,8 @@ $table = foreach ($date in $dates)
         spx_fv   = $spx_fv
         spx_low  = $spx_low
         spx_high = $spx_high
+
+        unrate_chg = $unrate_chg
     }
 }
 
@@ -163,7 +191,8 @@ foreach ($elt in $table | Select-Object -Skip 1)
     Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $rrp_change.ToString('N0')) -ForegroundColor $rrp_color -NoNewline
     Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $tga_change.ToString('N0')) -ForegroundColor $tga_color -NoNewline
     Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0')) -NoNewline; Write-Host ('{0,20}' -f $nl_change.ToString('N0'))  -ForegroundColor $nl_color  -NoNewline
-    Write-Host ('{0,10}' -f $elt.spx_fv)
+    Write-Host ('{0,10}' -f $elt.spx_fv) -NoNewline
+    Write-Host ('{0,10}' -f $elt.unrate_chg)
     
     $prev = $elt
 }
@@ -216,17 +245,25 @@ $json = @{
         data = @{
             labels = $table.ForEach({ $_.date })
             datasets = @(
-                @{ label = 'SPX';        data = $table.ForEach({ $_.spx    }) },
-                @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv }) },
-                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) ; borderColor = '#62ae67' },
-                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); borderColor = '#f06464' }
+                @{ label = 'SPX';        data = $table.ForEach({ $_.spx    })    ; pointRadius = 0 }
+                @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv })    ; pointRadius = 0 }
+                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low })   ; pointRadius = 0;   borderColor = '#62ae67' }
+                @{ label = 'High';       data = $table.ForEach({ $_.spx_high })  ; pointRadius = 0;   borderColor = '#f06464' }
+                @{ label = 'UNRATE CHG'; data = $table.ForEach({ $_.unrate_chg }); pointRadius = 0;   yAxisID = 'Y2' }
             )
         }
         options = @{
-            
+                        
             title = @{ display = $true; text = 'SPX Fair Value (NLSHO based)' }
 
-            scales = @{ }
+            scales = @{
+
+                yAxes = @(
+                    @{ id = 'Y1'; display = $true; position = 'left' }
+                    @{ id = 'Y2'; display = $true; position = 'right'; ticks = @{ min = -0.2; max = 4.0 } }
+                )
+
+            }
         }
     }
 } | ConvertTo-Json -Depth 100
