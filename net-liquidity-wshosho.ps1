@@ -216,10 +216,10 @@ $json = @{
         data = @{
             labels = $table.ForEach({ $_.date })
             datasets = @(
-                @{ label = 'SPX';        data = $table.ForEach({ $_.spx    }) },
-                @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv }) },
-                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low }) ; borderColor = '#62ae67' },
-                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); borderColor = '#f06464' }
+                @{ label = 'SPX';        data = $table.ForEach({ $_.spx      }); pointRadius = 2; },
+                @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv   }); pointRadius = 2; },
+                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
+                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
             )
         }
         options = @{
