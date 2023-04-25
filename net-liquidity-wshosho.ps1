@@ -114,6 +114,8 @@ $table = foreach ($date in $dates)
         spx_fv   = $spx_fv
         spx_low  = $spx_low
         spx_high = $spx_high
+
+        spx_div_nl = $spx / $net_liquidity * 1000 * 1000 * 1000
     }
 }
 
@@ -128,15 +130,49 @@ function days-in-month ($date)
 #     ((days-in-month $date) - (Get-Date $date -Format 'dd')) -lt $n
 # }
 
+# function rrp-color ($date, $rrp_change)
+# {
+#     if ($rrp_change -gt 0)
+#     {
+#         if ((days-in-month $date) - (Get-Date $date -Format 'dd') -lt 3) { 'Yellow' } else { 'Green' }
+#     }
+#     elseif ($rrp_change -lt 0) { 'Red' }
+#     else { 'White' }
+# }
+
+function dates-in-month ($date)
+{
+    # $n = [datetime]::DaysInMonth((Get-Date $date -Format 'yyyy'), (Get-Date $date -Format 'MM'))
+
+    $n = days-in-month $date
+
+    foreach ($dd in 1..$n)
+    {
+        Get-Date -Year (Get-Date $date -Format 'yyyy') -Month (Get-Date $date -Format 'MM') -Day $dd -Format 'yyyy-MM-dd'
+    }
+}
+
+function is-weekday ($date)
+{
+    'Mon Tue Wed Thu Fri' -match (Get-Date $date -Format 'ddd') 
+}
+
+function last-weekdays-in-month ($date, $n)
+{
+    dates-in-month $date | Where-Object { is-weekday $_ } | Select-Object -Last $n
+}
+
 function rrp-color ($date, $rrp_change)
 {
     if ($rrp_change -gt 0)
     {
-        if ((days-in-month $date) - (Get-Date $date -Format 'dd') -lt 3) { 'Yellow' } else { 'Green' }
+        if ($date -in (last-weekdays-in-month $date 3)) { 'Yellow' } else { 'Green' }
     }
     elseif ($rrp_change -lt 0) { 'Red' }
     else { 'White' }
 }
+
+
 # ----------------------------------------------------------------------
 $prev = $table[0]
 
@@ -220,6 +256,8 @@ $json = @{
                 @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv   }); pointRadius = 2; },
                 @{ label = 'Low';        data = $table.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
                 @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
+
+              # @{ label = 'SPX / NL';   data = $table.ForEach({ $_.spx_div_nl }); pointRadius = 2; borderColor = '#f06464'; hidden = $true }
             )
         }
         options = @{
@@ -252,4 +290,26 @@ exit
 # ----------------------------------------------------------------------
 
 
+# function days-in-month ($date)
+# {
+#     [datetime]::DaysInMonth((Get-Date $date -Format 'yyyy'), (Get-Date $date -Format 'MM'))
+# }
+
+# # function within-last-days-of-month ($date, $n)
+# # {
+# #     ((days-in-month $date) - (Get-Date $date -Format 'dd')) -lt $n
+# # }
+
+# function rrp-color ($date, $rrp_change)
+# {
+#     if ($rrp_change -gt 0)
+#     {
+#         if ((days-in-month $date) - (Get-Date $date -Format 'dd') -lt 3) { 'Yellow' } else { 'Green' }
+#     }
+#     elseif ($rrp_change -lt 0) { 'Red' }
+#     else { 'White' }
+# }
+
+
+# days-in-month '2023-04-25'
 
