@@ -210,6 +210,118 @@ Write-Host 'DATE                    WSHOSHO              CHANGE                 
 
 # ----------------------------------------------------------------------
 
+$color_to_class = @{
+    Green = 'table-success'
+    Red = 'table-danger'
+    Yellow = 'table-warning'
+    White = 'table-default'
+}
+
+function html-td ($val, $class)
+{
+    if ($class -eq $null)
+    {
+        '<td>'  >> C:\temp\nl.html
+        $val    >> C:\temp\nl.html
+        '</td>' >> C:\temp\nl.html    
+    }
+    else
+    {
+        ('<td class="{0}">' -f $class) >> C:\temp\nl.html
+        $val                           >> C:\temp\nl.html
+        '</td>'                        >> C:\temp\nl.html
+    }
+    
+}
+
+'<!doctype html>' > C:\temp\nl.html
+'<html lang="en">' >> C:\temp\nl.html
+
+'<head>' >> c:\temp\nl.html
+
+# '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">' >> c:\temp\nl.html
+# '<link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.css">' >> c:\temp\nl.html
+
+@"
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.css">
+"@ >> c:\temp\nl.html
+
+
+'</head>' >> c:\temp\nl.html
+
+'<body>' >> c:\temp\nl.html
+
+# '<table class="table">' >> c:\temp\nl.html
+
+# '<table data-toggle="table" data-height="500">' >> c:\temp\nl.html
+
+'<table class="table table-sm" data-toggle="table" data-height="500">' >> c:\temp\nl.html
+
+'<thead>' >> c:\temp\nl.html
+'<tr>' >> c:\temp\nl.html
+
+foreach ($elt in 'DATE','WSHOSHO','CHANGE','RRP','CHANGE','TGA','CHANGE','NET LIQUIDITY','CHANGE','SPX FV')
+{
+    '<th scope="col">'  >> c:\temp\nl.html
+    $elt    >> c:\temp\nl.html
+    '</th>' >> c:\temp\nl.html
+}
+
+'</tr>' >> c:\temp\nl.html
+'</thead>' >> c:\temp\nl.html
+
+'<tbody>' >> c:\temp\nl.html
+
+$prev = $table[0]
+
+foreach ($elt in $table | Select-Object -Skip 1)
+{
+    $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
+    $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' } 
+    $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
+    $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
+    
+    '<tr>' >> C:\temp\nl.html
+
+    html-td $elt.date        
+    
+    html-td $elt.fed.ToString('N0');           html-td $fed_change.ToString('N0') ($color_to_class[$fed_color], 'text-end' -join ' ')    
+    html-td $elt.rrp.ToString('N0');           html-td $rrp_change.ToString('N0') ($color_to_class[$rrp_color], 'text-end' -join ' ')    
+    html-td $elt.tga.ToString('N0');           html-td $tga_change.ToString('N0') ($color_to_class[$tga_color], 'text-end' -join ' ')    
+    html-td $elt.net_liquidity.ToString('N0'); html-td $nl_change.ToString('N0')  ($color_to_class[$nl_color], 'text-end' -join ' ')    
+    html-td $elt.spx_fv
+    
+    '<tr>' >> C:\temp\nl.html
+    
+    $prev = $elt
+}
+
+'</tbody>' >> c:\temp\nl.html
+
+#           2022-10-25    8,743,922,000,000                   0   2,195,616,000,000     -46,428,000,000     636,785,000,000                   0   5,911,521,000,000      46,428,000,000      3749
+# Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
+Write-Host 'DATE                    WSHOSHO              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
+
+'</table>' >> c:\temp\nl.html
+
+# '<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>' >> c:\temp\nl.html
+# '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>' >> c:\temp\nl.html
+# '<script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>' >> c:\temp\nl.html
+
+
+@"
+<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
+"@ >> c:\temp\nl.html
+
+'</body>' >> c:\temp\nl.html
+
+Start-Process C:\temp\nl.html
+
+# ----------------------------------------------------------------------
 if ($csv)
 {
     $table | Export-Csv ('net-liquidity-{0}.csv' -f (Get-Date -Format 'yyyy-MM-dd')) -NoTypeInformation
@@ -278,38 +390,12 @@ $id = ([System.Uri] $result.url).Segments[-1]
 Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
 
 exit
-
 # ----------------------------------------------------------------------
 # Example invocations
 # ----------------------------------------------------------------------
-
 . .\net-liquidity.ps1 -days 90
 
 . .\net-liquidity.ps1 -csv
-
 # ----------------------------------------------------------------------
 
-
-# function days-in-month ($date)
-# {
-#     [datetime]::DaysInMonth((Get-Date $date -Format 'yyyy'), (Get-Date $date -Format 'MM'))
-# }
-
-# # function within-last-days-of-month ($date, $n)
-# # {
-# #     ((days-in-month $date) - (Get-Date $date -Format 'dd')) -lt $n
-# # }
-
-# function rrp-color ($date, $rrp_change)
-# {
-#     if ($rrp_change -gt 0)
-#     {
-#         if ((days-in-month $date) - (Get-Date $date -Format 'dd') -lt 3) { 'Yellow' } else { 'Green' }
-#     }
-#     elseif ($rrp_change -lt 0) { 'Red' }
-#     else { 'White' }
-# }
-
-
-# days-in-month '2023-04-25'
-
+$table | ConvertTo-Html > C:\temp\out.html; Start-Process C:\temp\out.html
