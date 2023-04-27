@@ -1,5 +1,5 @@
 ﻿
-Param($days = 365, [switch]$csv)
+Param($days = 365, [switch]$csv, [switch]$html)
 
 function get-recent-tga ()
 {
@@ -209,7 +209,146 @@ foreach ($elt in $table | Select-Object -Skip 1)
 Write-Host 'DATE                    WSHOSHO              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
 
 # ----------------------------------------------------------------------
+# Page template
+# ----------------------------------------------------------------------
 
+$page_template = @"
+<!doctype html>
+<html lang="en">
+
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.css">
+
+</head>
+
+</head>
+
+<body>
+
+  <div class="container-fluid">
+    <div class="row flex-nowrap">
+      <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 ">
+        <div class="d-flex flex-column align-items-center align-items-sm-start px-3 pt-2 text-white min-vh-100">
+          <a href="/" class="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+            <span class="fs-5 d-none d-sm-inline">Menu</span>
+          </a>
+          <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start" id="menu">
+            
+            <li class="nav-item">
+              <a href="#" class="nav-link align-middle px-0">
+                <i class="fs-4 bi-house"></i> <span class="ms-1 d-none d-sm-inline">Net Liquidity Table (WSHOSHO)</span>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a href="#" class="nav-link align-middle px-0">
+                <i class="fs-4 bi-house"></i> <span class="ms-1 d-none d-sm-inline">Net Liquidity Chart (WSHOSHO)</span>
+              </a>
+            </li>
+
+
+
+            <li>
+              <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 align-middle">
+                <i class="fs-4 bi-speedometer2"></i> <span class="ms-1 d-none d-sm-inline">Dashboard</span> </a>
+              <ul class="collapse show nav flex-column ms-1" id="submenu1" data-bs-parent="#menu">
+                <li class="w-100">
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Item</span> 1 </a>
+                </li>
+                <li>
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Item</span> 2 </a>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <a href="#" class="nav-link px-0 align-middle">
+                <i class="fs-4 bi-table"></i> <span class="ms-1 d-none d-sm-inline">Orders</span></a>
+            </li>
+            <li>
+              <a href="#submenu2" data-bs-toggle="collapse" class="nav-link px-0 align-middle ">
+                <i class="fs-4 bi-bootstrap"></i> <span class="ms-1 d-none d-sm-inline">Bootstrap</span></a>
+              <ul class="collapse nav flex-column ms-1" id="submenu2" data-bs-parent="#menu">
+                <li class="w-100">
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Item</span> 1</a>
+                </li>
+                <li>
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Item</span> 2</a>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <a href="#submenu3" data-bs-toggle="collapse" class="nav-link px-0 align-middle">
+                <i class="fs-4 bi-grid"></i> <span class="ms-1 d-none d-sm-inline">Products</span> </a>
+              <ul class="collapse nav flex-column ms-1" id="submenu3" data-bs-parent="#menu">
+                <li class="w-100">
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Product</span> 1</a>
+                </li>
+                <li>
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Product</span> 2</a>
+                </li>
+                <li>
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Product</span> 3</a>
+                </li>
+                <li>
+                  <a href="#" class="nav-link px-0"> <span class="d-none d-sm-inline">Product</span> 4</a>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <a href="#" class="nav-link px-0 align-middle">
+                <i class="fs-4 bi-people"></i> <span class="ms-1 d-none d-sm-inline">Customers</span> </a>
+            </li>
+          </ul>
+          <hr>
+          <div class="dropdown pb-4">
+            <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
+              id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+              <img src="https://github.com/mdo.png" alt="hugenerd" width="30" height="30" class="rounded-circle">
+              <span class="d-none d-sm-inline mx-1">menu</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+              <li><a class="dropdown-item" href="#">New project...</a></li>
+              <li><a class="dropdown-item" href="#">Settings</a></li>
+              <li><a class="dropdown-item" href="#">Profile</a></li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
+              <li><a class="dropdown-item" href="#">Sign out</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col py-3">
+
+        {0}
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
+
+  {1}
+  {2}
+</body>
+"@
+
+function page-template ($a, $b, $c)
+{
+    $page_template -f $a, $b, $c
+}
+
+# ----------------------------------------------------------------------
+# HTML table
+# ----------------------------------------------------------------------
 $color_to_class = @{
     Green = 'table-success'
     Red = 'table-danger'
@@ -217,62 +356,44 @@ $color_to_class = @{
     White = 'table-default'
 }
 
+
+function html-th ($val) { '<th>{0}</th>' -f $val >> $file }
+
 function html-td ($val, $class)
 {
     if ($class -eq $null)
     {
-        '<td>'  >> C:\temp\nl.html
-        $val    >> C:\temp\nl.html
-        '</td>' >> C:\temp\nl.html    
+        '<td>'  >> $file
+        $val    >> $file
+        '</td>' >> $file    
     }
     else
     {
-        ('<td class="{0}">' -f $class) >> C:\temp\nl.html
-        $val                           >> C:\temp\nl.html
-        '</td>'                        >> C:\temp\nl.html
+        ('<td class="{0}">' -f $class) >> $file
+        $val                           >> $file
+        '</td>'                        >> $file
     }
     
 }
 
-'<!doctype html>' > C:\temp\nl.html
-'<html lang="en">' >> C:\temp\nl.html
+$file = 'net-liquidity-wshosho-table-partial.html'
 
-'<head>' >> c:\temp\nl.html
+'<table class="table table-sm" data-toggle="table" data-height="500">' > $file
 
-# '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">' >> c:\temp\nl.html
-# '<link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.css">' >> c:\temp\nl.html
-
-@"
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
-<link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.css">
-"@ >> c:\temp\nl.html
-
-
-'</head>' >> c:\temp\nl.html
-
-'<body>' >> c:\temp\nl.html
-
-# '<table class="table">' >> c:\temp\nl.html
-
-# '<table data-toggle="table" data-height="500">' >> c:\temp\nl.html
-
-'<table class="table table-sm" data-toggle="table" data-height="500">' >> c:\temp\nl.html
-
-'<thead>' >> c:\temp\nl.html
-'<tr>' >> c:\temp\nl.html
+'<thead>' >> $file
+'<tr>' >> $file
 
 foreach ($elt in 'DATE','WSHOSHO','CHANGE','RRP','CHANGE','TGA','CHANGE','NET LIQUIDITY','CHANGE','SPX FV')
 {
-    '<th scope="col">'  >> c:\temp\nl.html
-    $elt    >> c:\temp\nl.html
-    '</th>' >> c:\temp\nl.html
+    '<th scope="col">'  >> $file
+    $elt    >> $file
+    '</th>' >> $file
 }
 
-'</tr>' >> c:\temp\nl.html
-'</thead>' >> c:\temp\nl.html
+'</tr>' >> $file
+'</thead>' >> $file
 
-'<tbody>' >> c:\temp\nl.html
+'<tbody>' >> $file
 
 $prev = $table[0]
 
@@ -283,7 +404,7 @@ foreach ($elt in $table | Select-Object -Skip 1)
     $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
     $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
     
-    '<tr>' >> C:\temp\nl.html
+    '<tr>' >> $file
 
     html-td $elt.date        
     
@@ -293,33 +414,22 @@ foreach ($elt in $table | Select-Object -Skip 1)
     html-td $elt.net_liquidity.ToString('N0'); html-td $nl_change.ToString('N0')  ($color_to_class[$nl_color], 'text-end' -join ' ')    
     html-td $elt.spx_fv
     
-    '<tr>' >> C:\temp\nl.html
+    '</tr>' >> $file
     
     $prev = $elt
 }
 
-'</tbody>' >> c:\temp\nl.html
+'</tbody>' >> $file
 
-#           2022-10-25    8,743,922,000,000                   0   2,195,616,000,000     -46,428,000,000     636,785,000,000                   0   5,911,521,000,000      46,428,000,000      3749
-# Write-Host 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
-Write-Host 'DATE                    WSHOSHO              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
+'</table>' >> $file
 
-'</table>' >> c:\temp\nl.html
-
-# '<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>' >> c:\temp\nl.html
-# '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>' >> c:\temp\nl.html
-# '<script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>' >> c:\temp\nl.html
-
+$file = 'net-liquidity-wshosho-table-scripts-partial.html'
 
 @"
 <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
-"@ >> c:\temp\nl.html
-
-'</body>' >> c:\temp\nl.html
-
-Start-Process C:\temp\nl.html
+"@ > $file
 
 # ----------------------------------------------------------------------
 if ($csv)
@@ -355,30 +465,115 @@ $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/creat
 $id = ([System.Uri] $result.url).Segments[-1]
 
 Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+# ----------------------------------------------------------------------
+# nl : chartjs
+# ----------------------------------------------------------------------
+
+$file = 'net-liquidity-wshosho-chart-partial.html'
+
+$json = @{
+    type = 'bar'
+    data = @{
+        labels = $table.ForEach({ $_.date })
+        datasets = @(
+            @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
+            @{ label = 'SHO';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+            @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+            @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+        )
+    }
+    options = @{
+        title = @{ display = $true; text = 'Net Liquidity Components (trillions USD)' }
+        scales = @{ 
+            y = @{
+                beginAtZero = $false
+            }
+        }
+    }
+} | ConvertTo-Json -Depth 100
+
+@"
+<div>
+  <canvas id="myChart"></canvas>
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const ctx = document.getElementById('myChart');
+    new Chart(ctx, {0});
+</script>
+"@ -f $json > $file
 
 # ----------------------------------------------------------------------
 
-$json = @{
-    chart = @{
-        type = 'line'
-        data = @{
-            labels = $table.ForEach({ $_.date })
-            datasets = @(
-                @{ label = 'SPX';        data = $table.ForEach({ $_.spx      }); pointRadius = 2; },
-                @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv   }); pointRadius = 2; },
-                @{ label = 'Low';        data = $table.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
-                @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
+# $main = @"
+# <div>
+#   <canvas id="myChart"></canvas>
+# </div> 
+# "@
 
-              # @{ label = 'SPX / NL';   data = $table.ForEach({ $_.spx_div_nl }); pointRadius = 2; borderColor = '#f06464'; hidden = $true }
-            )
-        }
-        options = @{
-            
-            title = @{ display = $true; text = 'SPX Fair Value (NLSHO based)' }
+# $script_reference = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>' 
 
-            scales = @{ }
-        }
+# $json = @{
+#     type = 'bar'
+#     data = @{
+#         labels = $table.ForEach({ $_.date })
+#         datasets = @(
+#             @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
+#             @{ label = 'SHO';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+#             @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+#             @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+#         )
+#     }
+#     options = @{
+#         title = @{ display = $true; text = 'Net Liquidity Components (trillions USD)' }
+#         scales = @{ 
+#             y = @{
+#                 beginAtZero = $false
+#             }
+#         }
+#     }
+# } | ConvertTo-Json -Depth 100
+
+# $script = @"
+# <script>
+#     const ctx = document.getElementById('myChart');
+#     new Chart(ctx, {0});
+# </script>
+
+# "@ -f $json
+
+
+# page-template $main $script_reference $script > c:\temp\nl-chart.html
+
+# Start-Process C:\temp\nl-chart.html
+
+# ----------------------------------------------------------------------
+
+$chart = @{
+    type = 'line'
+    data = @{
+        labels = $table.ForEach({ $_.date })
+        datasets = @(
+            @{ label = 'SPX';        data = $table.ForEach({ $_.spx      }); pointRadius = 2; borderColor = '#4E79A7' },
+            @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv   }); pointRadius = 2; borderColor = '#F28E2B' },
+            @{ label = 'Low';        data = $table.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
+            @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
+
+          # @{ label = 'SPX / NL';   data = $table.ForEach({ $_.spx_div_nl }); pointRadius = 2; borderColor = '#f06464'; hidden = $true }
+        )
     }
+    options = @{
+        
+        title = @{ display = $true; text = 'SPX Fair Value (NLSHO based)' }
+
+        scales = @{ }
+    }
+}
+
+$json = @{
+    chart = $chart
 } | ConvertTo-Json -Depth 100
 
 $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/create' -Body $json -ContentType 'application/json'
@@ -388,7 +583,27 @@ $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/creat
 $id = ([System.Uri] $result.url).Segments[-1]
 
 Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+# ----------------------------------------------------------------------
+# SPX Fair Value partial HTML
+# ----------------------------------------------------------------------
+$file = 'spx-fair-value-wshosho-partial.html'
 
+@"
+
+<div>
+  <canvas id="myChart"></canvas>
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const ctx = document.getElementById('myChart');
+    new Chart(ctx, {0});
+</script>
+
+"@ -f ($chart | ConvertTo-Json -Depth 100) > $file
+
+# ----------------------------------------------------------------------
 exit
 # ----------------------------------------------------------------------
 # Example invocations
