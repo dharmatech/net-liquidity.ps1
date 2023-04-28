@@ -42,6 +42,25 @@ function get-sp500 ()
     $result | ConvertFrom-Csv | Where-Object SP500 -NE '.'
 }
 
+function delta ($table, $a, $b)
+{
+    if ($b -eq $null)
+    {
+        $b = '{0}_change' -f $a
+    }
+
+    $prev = $table[0]
+
+    foreach ($elt in $table | Select-Object -Skip 1)
+    {
+        $change = $elt.$a - $prev.$a
+
+        $elt | Select-Object *, @{ Label = $b; Expression = { $change } }
+
+        $prev = $elt
+    }
+}
+# ----------------------------------------------------------------------
 $tga = get-recent-tga
 $rrp = get-recent-reverse-repo
 $fed = get-recent-wshosho
@@ -73,7 +92,9 @@ $dates =
     Sort-Object | 
     Select-Object -Unique | 
     Where-Object { $_ -ge $earliest }
-
+# ----------------------------------------------------------------------
+# table
+# ----------------------------------------------------------------------
 $table = foreach ($date in $dates)
 {
     $tga_record = $tga_sorted.Where({ $_.record_date   -le $date }, 'Last')[0]
@@ -90,13 +111,13 @@ $table = foreach ($date in $dates)
 
     $spx = [math]::Round($sp_record.SP500, 0)
 
+    # WALCL fair value
     # $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 / 1.1 - 1625, 0)
-
     # $spx_low = $spx_fv - 150
     # $spx_high = $spx_fv + 350
    
+    # WSHOSHO fair value
     $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 - 1700, 0)
-    
     $spx_high = $spx_fv + 300
     # $spx_low  = $spx_fv - 300
     # $spx_low  = $spx_fv - 250
@@ -119,6 +140,10 @@ $table = foreach ($date in $dates)
     }
 }
 
+$table = delta $table 'fed'
+$table = delta $table 'rrp'
+$table = delta $table 'tga'
+$table = delta $table 'net_liquidity'
 # ----------------------------------------------------------------------
 function days-in-month ($date)
 {
@@ -178,19 +203,10 @@ $prev = $table[0]
 
 foreach ($elt in $table | Select-Object -Skip 1)
 {
-    # $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
-    # $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Red'   } elseif ($tga_change -lt 0) { 'Green' } else { 'White' }
-    # $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = if ($rrp_change -gt 0) { 'Red'   } elseif ($rrp_change -lt 0) { 'Green' } else { 'White' }
-    # $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
 
     $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
-    $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' }
-    
-    # $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = if ($rrp_change -gt 0) { 'Green' } elseif ($rrp_change -lt 0) { 'Red' }   else { 'White' }
-
+    $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' }   
     $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
-
-
     $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
     
     Write-Host $elt.date -NoNewline; Write-Host ' ' -NoNewline
@@ -487,3 +503,13 @@ exit
 # ----------------------------------------------------------------------
 
 $table | ConvertTo-Html > C:\temp\out.html; Start-Process C:\temp\out.html
+# ----------------------------------------------------------------------
+
+
+
+delta $table 'fed' | Select-Object -Last 30 | ft *
+
+
+
+
+$table | Select-Object -Last 30 | ft *
