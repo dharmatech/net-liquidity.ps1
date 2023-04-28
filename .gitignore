@@ -1,3 +1,8 @@
 net-liquidity-*.csv
 .vscode/launch.json
 spx-fair-value-wshosho-partial.html
+net-liquidity-wshosho-prev.ps1
+net-liquidity-wshosho-table.html
+net-liquidity-wshosho-table-scripts-partial.html
+net-liquidity-wshosho-table-partial.html
+net-liquidity-wshosho-chart-partial.html
