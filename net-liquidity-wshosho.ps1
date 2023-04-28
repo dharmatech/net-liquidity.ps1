@@ -205,42 +205,19 @@ function val-to-color ($val)
 }
 
 # ----------------------------------------------------------------------
-# $prev = $table[0]
-
 foreach ($elt in $table | Select-Object -Skip 1)
 {    
-    # $fed_change = $elt.fed           - $prev.fed;            $fed_color = val-to-color $fed_change
-    # $tga_change = $elt.tga           - $prev.tga;            $tga_color = val-to-color $tga_change
-    # $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
-    # $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = val-to-color $nl_change
-
-    # $fed_change = $elt.fed           - $prev.fed;            $fed_color = val-to-color $fed_change
-    $fed_color = val-to-color $elt.fed_change
-    
-    # $tga_change = $elt.tga           - $prev.tga;            $tga_color = val-to-color $tga_change
-    $tga_color = val-to-color $elt.tga_change
-
-    # $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
-    $rrp_color = rrp-color $elt.date $elt.rrp_change
-
-    # $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = val-to-color $nl_change
-    $nl_color  = val-to-color $elt.net_liquidity_change
-
     Write-Host $elt.date -NoNewline; Write-Host ' ' -NoNewline
-       
-    # Write-Host ('{0,20}' -f $elt.fed.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $fed_change.ToString('N0')) -ForegroundColor $fed_color -NoNewline
-    # Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $rrp_change.ToString('N0')) -ForegroundColor $rrp_color -NoNewline
-    # Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $tga_change.ToString('N0')) -ForegroundColor $tga_color -NoNewline
-    # Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0')) -NoNewline; Write-Host ('{0,20}' -f $nl_change.ToString('N0'))  -ForegroundColor $nl_color  -NoNewline
-    # Write-Host ('{0,10}' -f $elt.spx_fv)
-
-    Write-Host ('{0,20}' -f $elt.fed.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $elt.fed_change.ToString('N0'))            -ForegroundColor $fed_color -NoNewline
-    Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $elt.rrp_change.ToString('N0'))            -ForegroundColor $rrp_color -NoNewline
-    Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $elt.tga_change.ToString('N0'))            -ForegroundColor $tga_color -NoNewline
-    Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0')) -NoNewline; Write-Host ('{0,20}' -f $elt.net_liquidity_change.ToString('N0'))  -ForegroundColor $nl_color  -NoNewline
-    Write-Host ('{0,10}' -f $elt.spx_fv)    
     
-    # $prev = $elt
+    Write-Host ('{0,20}' -f $elt.fed.ToString('N0'))                                                                            -NoNewline
+    Write-Host ('{0,20}' -f $elt.fed_change.ToString('N0'))           -ForegroundColor (val-to-color $elt.fed_change)           -NoNewline
+    Write-Host ('{0,20}' -f $elt.rrp.ToString('N0'))                                                                            -NoNewline
+    Write-Host ('{0,20}' -f $elt.rrp_change.ToString('N0'))           -ForegroundColor (rrp-color $elt.date $elt.rrp_change)    -NoNewline
+    Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))                                                                            -NoNewline
+    Write-Host ('{0,20}' -f $elt.tga_change.ToString('N0'))           -ForegroundColor (val-to-color $elt.tga_change)           -NoNewline
+    Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0'))                                                                  -NoNewline
+    Write-Host ('{0,20}' -f $elt.net_liquidity_change.ToString('N0')) -ForegroundColor (val-to-color $elt.net_liquidity_change) -NoNewline
+    Write-Host ('{0,10}' -f $elt.spx_fv)    
 }
 
 #           2022-10-25    8,743,922,000,000                   0   2,195,616,000,000     -46,428,000,000     636,785,000,000                   0   5,911,521,000,000      46,428,000,000      3749
