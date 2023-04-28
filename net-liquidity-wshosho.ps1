@@ -197,6 +197,12 @@ function rrp-color ($date, $rrp_change)
     else { 'White' }
 }
 
+function val-to-color ($val)
+{
+    if     ($val -gt 0) { 'Green' }
+    elseif ($val -lt 0) { 'Red'   }
+    else                { 'White' }
+}
 
 # ----------------------------------------------------------------------
 $prev = $table[0]
@@ -204,11 +210,16 @@ $prev = $table[0]
 foreach ($elt in $table | Select-Object -Skip 1)
 {
 
-    $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
-    $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' }   
-    $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
-    $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
+    # $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
+    # $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' }   
+    # $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
+    # $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
     
+    $fed_change = $elt.fed           - $prev.fed;            $fed_color = val-to-color $fed_change
+    $tga_change = $elt.tga           - $prev.tga;            $tga_color = val-to-color $tga_change
+    $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
+    $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = val-to-color $nl_change
+
     Write-Host $elt.date -NoNewline; Write-Host ' ' -NoNewline
        
     Write-Host ('{0,20}' -f $elt.fed.ToString('N0'))           -NoNewline; Write-Host ('{0,20}' -f $fed_change.ToString('N0')) -ForegroundColor $fed_color -NoNewline
