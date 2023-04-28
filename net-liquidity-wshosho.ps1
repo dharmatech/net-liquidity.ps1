@@ -234,24 +234,74 @@ $color_to_class = @{
     White = 'table-default'
 }
 
-function html-th ($val) { '<th>{0}</th>' -f $val >> $file }
+# function html-th ($val) { '<th>{0}</th>' -f $val >> $file }
 
-function html-td ($val, $class)
+# function html-td ($val, $class)
+# {
+#     if ($class -eq $null)
+#     {
+#         '<td>'  >> $file
+#         $val    >> $file
+#         '</td>' >> $file    
+#     }
+#     else
+#     {
+#         ('<td class="{0}">' -f $class) >> $file
+#         $val                           >> $file
+#         '</td>'                        >> $file
+#     }
+    
+# }
+
+function html-tag ($tag_name, $children, $attrs)
 {
-    if ($class -eq $null)
+    $tag = if ($attrs -eq $null)
     {
-        '<td>'  >> $file
-        $val    >> $file
-        '</td>' >> $file    
+        '<{0}>' -f $tag_name
     }
     else
     {
-        ('<td class="{0}">' -f $class) >> $file
-        $val                           >> $file
-        '</td>'                        >> $file
+        $result = foreach ($item in $attrs.GetEnumerator())
+        {
+            '{0}="{1}"' -f $item.Name, $item.Value
+        }
+        
+        '<{0} {1}>' -f $tag_name, ($result -join ' ')
     }
-    
+
+    $close = '</{0}>' -f $tag_name
+
+    if ($children -eq $null)
+    {
+        $tag
+        $close
+    }
+    elseif ($children.GetType().Name -eq 'Object[]')
+    {
+        $tag
+        foreach ($child in $children)
+        {
+            $child
+        }
+        $close
+    }
+    elseif ($children.GetType().Name -eq 'String')
+    {
+        $tag
+        $children
+        $close
+    }
+    else
+    {
+        $tag
+        $children
+        $close
+    }
 }
+
+function h-tr ($children, $attrs) { html-tag 'tr' $children $attrs }
+function h-td ($children, $attrs) { html-tag 'td' $children $attrs }
+
 
 if ($html)
 {
@@ -513,3 +563,76 @@ delta $table 'fed' | Select-Object -Last 30 | ft *
 
 
 $table | Select-Object -Last 30 | ft *
+
+# ----------------------------------------------------------------------
+
+.\net-liquidity-wshosho.ps1 -html
+
+# ----------------------------------------------------------------------
+
+# <table class="table table-sm" data-toggle="table" data-height="800" style="font-family: monospace">
+
+# <table class="table table-sm" data-toggle="table" data-height="800" style="font-family: 'Cascadia Code', sans-serif">
+
+$table_template = @"
+<table class="table table-sm" data-toggle="table" data-height="800" style="font-family: monospace">
+    <thead>
+        <tr>
+        {0}
+        </tr>
+    </thead>
+    <tbody>
+        {1}
+    </tbody>
+</table>
+"@
+
+$scripts_template = @"
+<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
+"@
+
+if ($html)
+{
+    $headers = foreach ($elt in 'DATE','WSHOSHO','CHANGE','RRP','CHANGE','TGA','CHANGE','NET LIQUIDITY','CHANGE','SPX FV')
+    {
+        '<th scope="col">{0}</th>' -f $elt        
+    }
+
+    $prev = $table[0]
+
+    $rows = foreach ($elt in $table | Select-Object -Skip 1)
+    {
+        $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
+        $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' } 
+        $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
+        $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
+ 
+        h-tr @(
+            h-td $elt.date        
+            h-td $elt.fed.ToString('N0')
+            h-td $fed_change.ToString('N0')          @{ class = ($color_to_class[$fed_color], 'text-end' -join ' ') }
+            h-td $elt.rrp.ToString('N0')         
+            h-td $rrp_change.ToString('N0')          @{ class = ($color_to_class[$rrp_color], 'text-end' -join ' ') }
+            h-td $elt.tga.ToString('N0')         
+            h-td $tga_change.ToString('N0')          @{ class = ($color_to_class[$tga_color], 'text-end' -join ' ') }
+            h-td $elt.net_liquidity.ToString('N0')
+            h-td $nl_change.ToString('N0')           @{ class = ($color_to_class[$nl_color],  'text-end' -join ' ') }
+            h-td $elt.spx_fv
+        )        
+               
+        $prev = $elt
+    }
+
+    $table_template -f ($headers -join "`n"), ($rows -join "`n") > .\net-liquidity-wshosho-table-partial.html
+    
+    $scripts_template > net-liquidity-wshosho-table-scripts-partial.html
+
+    (Get-Content .\page-template.html -Raw) `
+        -replace '---MAIN---', (Get-Content -Raw .\net-liquidity-wshosho-table-partial.html) `
+        -replace '---SCRIPTS---', (Get-Content -Raw .\net-liquidity-wshosho-table-scripts-partial.html) `
+        > .\net-liquidity-wshosho-table.html
+
+    Start-Process .\net-liquidity-wshosho-table.html
+}
