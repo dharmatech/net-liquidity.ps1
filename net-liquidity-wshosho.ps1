@@ -1,5 +1,5 @@
 ﻿
-Param($days = 365, [switch]$csv, [switch]$html)
+Param($days = 365, [switch]$csv, [switch]$html, [switch]$skip_quickchart, [switch]$data)
 
 function get-recent-tga ()
 {
@@ -144,6 +144,8 @@ $table = delta $table 'fed'
 $table = delta $table 'rrp'
 $table = delta $table 'tga'
 $table = delta $table 'net_liquidity'
+
+if ($data) { $table; exit }
 # ----------------------------------------------------------------------
 function days-in-month ($date)
 {
@@ -302,66 +304,60 @@ function html-tag ($tag_name, $children, $attrs)
 function h-tr ($children, $attrs) { html-tag 'tr' $children $attrs }
 function h-td ($children, $attrs) { html-tag 'td' $children $attrs }
 
+$table_template = @"
+<table class="table table-sm" data-toggle="table" data-height="800" style="font-family: monospace">
+    <thead>
+        <tr>
+        {0}
+        </tr>
+    </thead>
+    <tbody>
+        {1}
+    </tbody>
+</table>
+"@
 
-if ($html)
-{
-
-    $file = 'net-liquidity-wshosho-table-partial.html'
-
-    '<table class="table table-sm" data-toggle="table" data-height="800">' > $file
-
-    '<thead>' >> $file
-    '<tr>' >> $file
-
-    foreach ($elt in 'DATE','WSHOSHO','CHANGE','RRP','CHANGE','TGA','CHANGE','NET LIQUIDITY','CHANGE','SPX FV')
-    {
-        '<th scope="col">'  >> $file
-        $elt    >> $file
-        '</th>' >> $file
-    }
-
-    '</tr>' >> $file
-    '</thead>' >> $file
-
-    '<tbody>' >> $file
-
-    $prev = $table[0]
-
-    foreach ($elt in $table | Select-Object -Skip 1)
-    {
-        $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
-        $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' } 
-        $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
-        $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
-        
-        '<tr>' >> $file
-
-        html-td $elt.date        
-        
-        html-td $elt.fed.ToString('N0');           html-td $fed_change.ToString('N0') ($color_to_class[$fed_color], 'text-end' -join ' ')    
-        html-td $elt.rrp.ToString('N0');           html-td $rrp_change.ToString('N0') ($color_to_class[$rrp_color], 'text-end' -join ' ')    
-        html-td $elt.tga.ToString('N0');           html-td $tga_change.ToString('N0') ($color_to_class[$tga_color], 'text-end' -join ' ')    
-        html-td $elt.net_liquidity.ToString('N0'); html-td $nl_change.ToString('N0')  ($color_to_class[$nl_color], 'text-end' -join ' ')    
-        html-td $elt.spx_fv
-        
-        '</tr>' >> $file
-        
-        $prev = $elt
-    }
-
-    '</tbody>' >> $file
-
-    '</table>' >> $file
-
-    $file = 'net-liquidity-wshosho-table-scripts-partial.html'
-
-@"
+$scripts_template = @"
 <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
-"@ > $file
+"@
 
+if ($html)
+{
+    $headers = foreach ($elt in 'DATE','WSHOSHO','CHANGE','RRP','CHANGE','TGA','CHANGE','NET LIQUIDITY','CHANGE','SPX FV')
+    {
+        '<th scope="col">{0}</th>' -f $elt        
+    }
+    
+    $rows = foreach ($elt in $table)
+    { 
+        h-tr @(
+            h-td $elt.date        
+            h-td $elt.fed.ToString('N0')
+            h-td $elt.fed_change.ToString('N0')           @{ class = ($color_to_class[(val-to-color $elt.fed_change)],           'text-end' -join ' ') }
+            h-td $elt.rrp.ToString('N0')         
+            h-td $elt.rrp_change.ToString('N0')           @{ class = ($color_to_class[(rrp-color $elt.date $elt.rrp_change)],    'text-end' -join ' ') }
+            h-td $elt.tga.ToString('N0')         
+            h-td $elt.tga_change.ToString('N0')           @{ class = ($color_to_class[(val-to-color $elt.tga_change)],           'text-end' -join ' ') }
+            h-td $elt.net_liquidity.ToString('N0')
+            h-td $elt.net_liquidity_change.ToString('N0') @{ class = ($color_to_class[(val-to-color $elt.net_liquidity_change)], 'text-end' -join ' ') }
+            h-td $elt.spx_fv
+        )        
+    }
+
+    $table_template -f ($headers -join "`n"), ($rows -join "`n") > net-liquidity-wshosho-table-partial.html
+    $scripts_template                                            > net-liquidity-wshosho-table-scripts-partial.html
+
+    (Get-Content .\page-template.html -Raw) `
+        -replace '---MAIN---',    (Get-Content -Raw .\net-liquidity-wshosho-table-partial.html) `
+        -replace '---SCRIPTS---', (Get-Content -Raw .\net-liquidity-wshosho-table-scripts-partial.html) `
+        > .\net-liquidity-wshosho-table.html
+
+    # Start-Process .\net-liquidity-wshosho-table-partial.html
+    Start-Process .\net-liquidity-wshosho-table.html
 }
+
 # ----------------------------------------------------------------------
 if ($csv)
 {
@@ -391,8 +387,6 @@ $json = @{
 
 $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/create' -Body $json -ContentType 'application/json'
 
-# Start-Process $result.url
-
 $id = ([System.Uri] $result.url).Segments[-1]
 
 Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
@@ -400,33 +394,7 @@ Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
 # nl : chartjs
 # ----------------------------------------------------------------------
 
-if ($html)
-{
-
-$file = 'net-liquidity-wshosho-chart-partial.html'
-
-$json = @{
-    type = 'bar'
-    data = @{
-        labels = $table.ForEach({ $_.date })
-        datasets = @(
-            @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
-            @{ label = 'SHO';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-            @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-            @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-        )
-    }
-    options = @{
-        title = @{ display = $true; text = 'Net Liquidity Components (trillions USD)' }
-        scales = @{ 
-            y = @{
-                beginAtZero = $false
-            }
-        }
-    }
-} | ConvertTo-Json -Depth 100
-
-@"
+$chart_template = @"
 <div>
   <canvas id="myChart"></canvas>
 </div> 
@@ -437,55 +405,40 @@ $json = @{
     const ctx = document.getElementById('myChart');
     new Chart(ctx, {0});
 </script>
-"@ -f $json > $file
+"@
 
+if ($html)
+{
+    $json = @{
+        type = 'bar'
+        # type = 'line'
+        data = @{
+            labels = $table.ForEach({ $_.date })
+            datasets = @(
+                @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
+                @{ label = 'SHO';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+            )
+        }
+        options = @{
+            title = @{ display = $true; text = 'Net Liquidity Components (trillions USD)' }
+            scales = @{ y = @{ beginAtZero = $false } }
+        }
+    } | ConvertTo-Json -Depth 100
+
+    $chart_template -f $json > net-liquidity-wshosho-chart-partial.html
+
+    # (Get-Content .\page-template.html -Raw) `
+    #     -replace '---MAIN---',    (Get-Content -Raw .\net-liquidity-wshosho-chart-partial.html) `
+    #     -replace '---SCRIPTS---', '' `
+    #     > .\net-liquidity-wshosho-chart.html
+
+    # Start-Process .\net-liquidity-wshosho-chart.html
+
+    Start-Process .\net-liquidity-wshosho-chart-partial.html
 }
 # ----------------------------------------------------------------------
-
-# $main = @"
-# <div>
-#   <canvas id="myChart"></canvas>
-# </div> 
-# "@
-
-# $script_reference = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>' 
-
-# $json = @{
-#     type = 'bar'
-#     data = @{
-#         labels = $table.ForEach({ $_.date })
-#         datasets = @(
-#             @{ label = 'NLSHO'; data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
-#             @{ label = 'SHO';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-#             @{ label = 'RRP';   data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-#             @{ label = 'TGA';   data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-#         )
-#     }
-#     options = @{
-#         title = @{ display = $true; text = 'Net Liquidity Components (trillions USD)' }
-#         scales = @{ 
-#             y = @{
-#                 beginAtZero = $false
-#             }
-#         }
-#     }
-# } | ConvertTo-Json -Depth 100
-
-# $script = @"
-# <script>
-#     const ctx = document.getElementById('myChart');
-#     new Chart(ctx, {0});
-# </script>
-
-# "@ -f $json
-
-
-# page-template $main $script_reference $script > c:\temp\nl-chart.html
-
-# Start-Process C:\temp\nl-chart.html
-
-# ----------------------------------------------------------------------
-
 $chart = @{
     type = 'line'
     data = @{
@@ -513,8 +466,6 @@ $json = @{
 
 $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/create' -Body $json -ContentType 'application/json'
 
-# Start-Process $result.url
-
 $id = ([System.Uri] $result.url).Segments[-1]
 
 Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
@@ -523,25 +474,39 @@ Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
 # ----------------------------------------------------------------------
 if ($html)
 {
+    $chart_template -f ($chart | ConvertTo-Json -Depth 100) > spx-fair-value-wshosho-partial.html
 
-    $file = 'spx-fair-value-wshosho-partial.html'
+    # (Get-Content .\page-template.html -Raw) `
+    #     -replace '---MAIN---',    (Get-Content -Raw .\net-liquidity-wshosho-chart-partial.html) `
+    #     -replace '---SCRIPTS---', '' `
+    #     > .\net-liquidity-wshosho-chart.html    
 
-@"
-
-<div>
-  <canvas id="myChart"></canvas>
-</div> 
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-    const ctx = document.getElementById('myChart');
-    new Chart(ctx, {0});
-</script>
-
-"@ -f ($chart | ConvertTo-Json -Depth 100) > $file
-
+    Start-Process spx-fair-value-wshosho-partial.html
 }
+
+
+
+# if ($html)
+# {
+
+# @"
+
+# <div>
+#   <canvas id="myChart"></canvas>
+# </div> 
+
+# <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+# <script>
+#     const ctx = document.getElementById('myChart');
+#     new Chart(ctx, {0});
+# </script>
+
+# "@ -f ($chart | ConvertTo-Json -Depth 100) > spx-fair-value-wshosho-partial.html
+
+#     Start-Process .\spx-fair-value-wshosho-partial.html
+
+# }
 # ----------------------------------------------------------------------
 exit
 # ----------------------------------------------------------------------
@@ -568,71 +533,11 @@ $table | Select-Object -Last 30 | ft *
 
 .\net-liquidity-wshosho.ps1 -html
 
+. .\net-liquidity-wshosho.ps1 -html
+
 # ----------------------------------------------------------------------
 
 # <table class="table table-sm" data-toggle="table" data-height="800" style="font-family: monospace">
 
 # <table class="table table-sm" data-toggle="table" data-height="800" style="font-family: 'Cascadia Code', sans-serif">
 
-$table_template = @"
-<table class="table table-sm" data-toggle="table" data-height="800" style="font-family: monospace">
-    <thead>
-        <tr>
-        {0}
-        </tr>
-    </thead>
-    <tbody>
-        {1}
-    </tbody>
-</table>
-"@
-
-$scripts_template = @"
-<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
-"@
-
-if ($html)
-{
-    $headers = foreach ($elt in 'DATE','WSHOSHO','CHANGE','RRP','CHANGE','TGA','CHANGE','NET LIQUIDITY','CHANGE','SPX FV')
-    {
-        '<th scope="col">{0}</th>' -f $elt        
-    }
-
-    $prev = $table[0]
-
-    $rows = foreach ($elt in $table | Select-Object -Skip 1)
-    {
-        $fed_change = $elt.fed           - $prev.fed;            $fed_color = if ($fed_change -gt 0) { 'Green' } elseif ($fed_change -lt 0) { 'Red'   } else { 'White' }
-        $tga_change = $elt.tga           - $prev.tga;            $tga_color = if ($tga_change -gt 0) { 'Green' } elseif ($tga_change -lt 0) { 'Red' }   else { 'White' } 
-        $rrp_change = $elt.rrp           - $prev.rrp;            $rrp_color = rrp-color $elt.date $rrp_change
-        $nl_change  = $elt.net_liquidity - $prev.net_liquidity;  $nl_color  = if ($nl_change  -gt 0) { 'Green' } elseif ($nl_change  -lt 0) { 'Red'   } else { 'White' }
- 
-        h-tr @(
-            h-td $elt.date        
-            h-td $elt.fed.ToString('N0')
-            h-td $fed_change.ToString('N0')          @{ class = ($color_to_class[$fed_color], 'text-end' -join ' ') }
-            h-td $elt.rrp.ToString('N0')         
-            h-td $rrp_change.ToString('N0')          @{ class = ($color_to_class[$rrp_color], 'text-end' -join ' ') }
-            h-td $elt.tga.ToString('N0')         
-            h-td $tga_change.ToString('N0')          @{ class = ($color_to_class[$tga_color], 'text-end' -join ' ') }
-            h-td $elt.net_liquidity.ToString('N0')
-            h-td $nl_change.ToString('N0')           @{ class = ($color_to_class[$nl_color],  'text-end' -join ' ') }
-            h-td $elt.spx_fv
-        )        
-               
-        $prev = $elt
-    }
-
-    $table_template -f ($headers -join "`n"), ($rows -join "`n") > .\net-liquidity-wshosho-table-partial.html
-    
-    $scripts_template > net-liquidity-wshosho-table-scripts-partial.html
-
-    (Get-Content .\page-template.html -Raw) `
-        -replace '---MAIN---', (Get-Content -Raw .\net-liquidity-wshosho-table-partial.html) `
-        -replace '---SCRIPTS---', (Get-Content -Raw .\net-liquidity-wshosho-table-scripts-partial.html) `
-        > .\net-liquidity-wshosho-table.html
-
-    Start-Process .\net-liquidity-wshosho-table.html
-}
