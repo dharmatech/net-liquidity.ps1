@@ -155,6 +155,8 @@ $json = @{
         }
         options = @{
             scales = @{ }
+
+            title = @{ display = $true; text = 'Net Liquidity Components (WALCL based)' }
         }
     }
 } | ConvertTo-Json -Depth 100
