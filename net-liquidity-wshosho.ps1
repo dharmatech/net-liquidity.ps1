@@ -1,5 +1,5 @@
 ﻿
-Param($days = 365, [switch]$csv, [switch]$data)
+Param($days = 365*2, [switch]$csv, [switch]$data)
 
 function get-recent-tga ()
 {

@@ -12,7 +12,7 @@ Param($days = 365*2, [switch]$csv, [switch]$data)
 
 
 
-
+# ----------------------------------------------------------------------
 function get-tga ($date)
 {
     $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"
@@ -47,7 +47,7 @@ function get-tga ($date)
 }
 
 # $data = get-tga '2022-01-01'
-
+# ----------------------------------------------------------------------
 
 
 
