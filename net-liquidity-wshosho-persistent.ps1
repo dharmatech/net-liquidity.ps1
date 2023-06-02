@@ -1,14 +1,56 @@
 ﻿
-Param($days = 365, [switch]$csv, [switch]$data)
+Param($days = 365*2, [switch]$csv, [switch]$data)
 
-function get-recent-tga ()
-{
-    $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
+# function get-recent-tga ()
+# {
+#     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
     
-    $result = Invoke-RestMethod -Method Get -Uri ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=300' -f $date)
+#     $result = Invoke-RestMethod -Method Get -Uri ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=300' -f $date)
 
-    $result
+#     $result
+# }
+
+
+
+
+function get-tga ($date)
+{
+    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"
+    $path     = "tga.json"
+
+    if (Test-Path $path)
+    {
+        $data = Get-Content $path | ConvertFrom-Json
+        $last_date = $data[-1].record_date
+        $since = (Get-Date $last_date).AddDays(1).ToString('yyyy-MM-dd')
+        Write-Host ("Retrieving records since: {0}" -f $since) -ForegroundColor Yellow
+        $result = Invoke-RestMethod -Uri ($uri -f $since) -Method Get
+        Write-Host ('Records retrieved: {0}' -f $result.data.Count) -ForegroundColor Yellow
+        if ($result.data.Count -gt 0)
+        {
+            $data + $result.data | ConvertTo-Json > $path
+            $data + $result.data
+        }
+        else
+        {
+            $data
+        }
+    }
+    else
+    {
+        Write-Host 'Retrieving TGA data' -ForegroundColor Yellow
+        $result = Invoke-RestMethod -Uri ($uri -f $date) -Method Get
+        Write-Host ('Retrieved {0} records' -f $result.data.Count)
+        $result.data | ConvertTo-Json > $path
+        $result.data
+    }
 }
+
+# $data = get-tga '2022-01-01'
+
+
+
+
 
 function get-recent-reverse-repo ()
 {
@@ -61,7 +103,8 @@ function delta ($table, $a, $b)
     }
 }
 # ----------------------------------------------------------------------
-$tga = get-recent-tga
+# $tga = get-recent-tga
+$tga = get-tga ((Get-Date).AddDays(-$days))
 $rrp = get-recent-reverse-repo
 $fed = get-recent-wshosho
 $sp  = get-sp500
@@ -72,20 +115,20 @@ if ($rrp.GetType().Name -eq 'String')
     exit 
 }
 
-$tga_sorted = $tga.data            | Sort-Object record_date
+$tga_sorted = $tga                   | Sort-Object record_date
 # $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise'
 $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
 $fed_sorted = $fed                 | Sort-Object DATE
 $sp_sorted  = $sp                  | Sort-Object DATE
 
-$tga_dates = $tga.data            | ForEach-Object { $_.record_date }
+$tga_dates = $tga            | ForEach-Object { $_.record_date }
 $rrp_dates = $rrp.repo.operations | ForEach-Object { $_.operationDate }
 $fed_dates = $fed                 | ForEach-Object { $_.DATE }
 
 $earliest = ($tga_dates | Sort-Object)[0]
 
 $dates = 
-    @($tga.data            | ForEach-Object { $_.record_date   }) +
+    @($tga                 | ForEach-Object { $_.record_date   }) +
     @($rrp.repo.operations | ForEach-Object { $_.operationDate }) +
     @($fed                 | ForEach-Object { $_.DATE          }) +
     @($sp                  | ForEach-Object { $_.DATE          }) | 
