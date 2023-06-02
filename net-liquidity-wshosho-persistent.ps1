@@ -1,17 +1,10 @@
 ﻿
-Param($days = 365*2, [switch]$csv, [switch]$data)
-
-# function get-recent-tga ()
-# {
-#     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
-    
-#     $result = Invoke-RestMethod -Method Get -Uri ('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=300' -f $date)
-
-#     $result
-# }
-
-
-
+Param($date = '2022-04-01', $days = 365*2, [switch]$csv, [switch]$data)
+# ----------------------------------------------------------------------
+function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
+{
+    $val.ToString('yyyy-MM-dd')
+}
 # ----------------------------------------------------------------------
 function get-tga ($date)
 {
@@ -45,22 +38,54 @@ function get-tga ($date)
         $result.data
     }
 }
-
-# $data = get-tga '2022-01-01'
 # ----------------------------------------------------------------------
-
-
-
-
-function get-recent-reverse-repo ()
+function download-rrp ($date)
 {
-    $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
-
+    Write-Host ('Downloading RRP data since: {0}' -f $date) -ForegroundColor Yellow
     $result = Invoke-RestMethod ('https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json?startDate={0}' -f $date)
-
-    $result
+    Write-Host ('Received {0} items' -f $result.repo.operations.Count) -ForegroundColor Yellow
+    $result.repo.operations | Sort-Object operationDate
 }
 
+function get-rrp ($date)
+{
+    $path = "rrp.json"
+
+    if (Test-Path $path)
+    {
+        $data = Get-Content $path | ConvertFrom-Json
+        $last_date = $data[-1].operationDate
+        $since = (Get-Date $last_date).AddDays(1) | to-datestamp
+        $result = download-rrp $since
+        if ($result.Count -gt 0)
+        {
+            $new = $data + $result 
+            $new | ConvertTo-Json > $path
+            $new
+        }
+        else
+        {
+            $data
+        }
+    }
+    else
+    {
+        $result = download-rrp $date
+        $result | ConvertTo-Json > $path
+        $result
+    }
+}
+# ----------------------------------------------------------------------
+
+# function get-recent-reverse-repo ()
+# {
+#     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
+
+#     $result = Invoke-RestMethod ('https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json?startDate={0}' -f $date)
+
+#     $result
+# }
+# ----------------------------------------------------------------------
 function get-recent-walcl ()
 {
     $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL'
@@ -104,8 +129,9 @@ function delta ($table, $a, $b)
 }
 # ----------------------------------------------------------------------
 # $tga = get-recent-tga
-$tga = get-tga ((Get-Date).AddDays(-$days))
-$rrp = get-recent-reverse-repo
+$tga = get-tga $date
+# $rrp = get-recent-reverse-repo
+$rrp = get-rrp $date
 $fed = get-recent-wshosho
 $sp  = get-sp500
 
@@ -117,19 +143,21 @@ if ($rrp.GetType().Name -eq 'String')
 
 $tga_sorted = $tga                   | Sort-Object record_date
 # $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise'
-$rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
+# $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
+$rrp_sorted = $rrp | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
+
 $fed_sorted = $fed                 | Sort-Object DATE
 $sp_sorted  = $sp                  | Sort-Object DATE
 
-$tga_dates = $tga            | ForEach-Object { $_.record_date }
-$rrp_dates = $rrp.repo.operations | ForEach-Object { $_.operationDate }
-$fed_dates = $fed                 | ForEach-Object { $_.DATE }
+$tga_dates = $tga | ForEach-Object { $_.record_date }
+$rrp_dates = $rrp | ForEach-Object { $_.operationDate }
+$fed_dates = $fed | ForEach-Object { $_.DATE }
 
 $earliest = ($tga_dates | Sort-Object)[0]
 
 $dates = 
     @($tga                 | ForEach-Object { $_.record_date   }) +
-    @($rrp.repo.operations | ForEach-Object { $_.operationDate }) +
+    @($rrp                 | ForEach-Object { $_.operationDate }) +
     @($fed                 | ForEach-Object { $_.DATE          }) +
     @($sp                  | ForEach-Object { $_.DATE          }) | 
     Sort-Object | 
@@ -339,3 +367,6 @@ exit
 
 . .\net-liquidity.ps1 -csv
 # ----------------------------------------------------------------------
+dir *.json
+del *.json
+del rrp.json
