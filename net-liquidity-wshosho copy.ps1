@@ -102,8 +102,8 @@ $table = foreach ($date in $dates)
     $fed_record = $fed_sorted.Where({ $_.DATE          -le $date }, 'Last')[0]
     $sp_record  = $sp_sorted.Where( { $_.DATE          -le $date }, 'Last')[0]
 
-    # $fed = [decimal] $fed_record.WALCL * 1000 * 1000
-    $fed = [decimal] $fed_record.WSHOSHO * 1000 * 1000
+    $fed = [decimal] $fed_record.WALCL * 1000 * 1000
+    # $fed = [decimal] $fed_record.WSHOSHO * 1000 * 1000
     $rrp = [decimal] $rrp_record.totalAmtAccepted
     $tga = [decimal] $tga_record.open_today_bal * 1000 * 1000
 
@@ -112,16 +112,19 @@ $table = foreach ($date in $dates)
     $spx = [math]::Round($sp_record.SP500, 0)
 
     # WALCL fair value
-    # $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 / 1.1 - 1625, 0)
-    # $spx_low = $spx_fv - 150
-    # $spx_high = $spx_fv + 350
+    $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 / 1.1 - 1625, 0)
+    $spx_low = $spx_fv - 150
+    $spx_high = $spx_fv + 350
+
+
+    $spx_minus_fv = $spx - $spx_fv
    
     # WSHOSHO fair value
-    $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 - 1700, 0)
-    $spx_high = $spx_fv + 300
-    # $spx_low  = $spx_fv - 300
-    # $spx_low  = $spx_fv - 250
-    $spx_low  = $spx_fv - 200
+    # $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 - 1700, 0)
+    # $spx_high = $spx_fv + 300
+    # # $spx_low  = $spx_fv - 300
+    # # $spx_low  = $spx_fv - 250
+    # $spx_low  = $spx_fv - 200
 
     [pscustomobject]@{
         date = $date
@@ -137,6 +140,8 @@ $table = foreach ($date in $dates)
         spx_high = $spx_high
 
         spx_div_nl = $spx / $net_liquidity * 1000 * 1000 * 1000
+
+        spx_minus_fv = $spx_minus_fv
     }
 }
 
@@ -297,12 +302,61 @@ exit
 . .\net-liquidity.ps1 -csv
 # ----------------------------------------------------------------------
 
-$result_tga = get-recent-tga
+$chart_template = @"
+<div>
+<canvas id="myChart"></canvas>
+</div> 
 
-$result_rrp = get-recent-reverse-repo
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-$result_walcl = get-recent-walcl
+<script>
+    const ctx = document.getElementById('myChart');
+    new Chart(ctx, {0});
+</script>
+"@
+
+
+# $table = $data
+
+$chart = @{
+    type = 'line'
+    data = @{
+        labels = $table.ForEach({ $_.date })
+        datasets = @(
+
+            @{ label = 'spx_minus_fv';        data = $table.ForEach({ $_.spx_minus_fv      }); pointRadius = 2; }
+
+            @{ label = 'lower';               data = $table.ForEach({ -300 }); pointRadius = 2; }
+            @{ label = 'upper';               data = $table.ForEach({  250 }); pointRadius = 2; }
+
+            # @{ label = 'SPX';        data = $table.ForEach({ $_.spx      }); pointRadius = 2; borderColor = '#4E79A7' },
+            # @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv   }); pointRadius = 2; borderColor = '#F28E2B' },
+            # @{ label = 'Low';        data = $table.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
+            # @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
+        )
+    }
+    options = @{
+        
+        title = @{ display = $true; text = 'SPX Fair Value (NLSHO based)' }
+
+        scales = @{ }
+    }
+}
+
+$chart_template -f ($chart | ConvertTo-Json -Depth 100) > c:\temp\out.html
+
+Start-Process C:\temp\out.html
+
+# (Get-Content .\page-template.html -Raw) `
+#     -replace '---MAIN---', ($chart_template -f ($chart | ConvertTo-Json -Depth 100)) `
+#     -replace '---SCRIPTS---', '' `
+#     > spx-fair-value-wshosho.html
+
+# Start-Process spx-fair-value-wshosho.html
+
+Copy-Item spx-fair-value-wshosho.html ..\dharmatech.github.io
 
 
 
-$result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.json?id=WALCL'
+
+$fed = get-recent-walcl
