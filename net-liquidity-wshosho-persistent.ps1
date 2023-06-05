@@ -6,19 +6,27 @@ function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
     $val.ToString('yyyy-MM-dd')
 }
 # ----------------------------------------------------------------------
-function get-tga ($date)
+function download-tga ($date)
 {
-    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"
-    $path     = "tga.json"
+    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"    
+    Write-Host ('Downloading TGA data since {0}' -f $date) -ForegroundColor Yellow
+    $result = Invoke-RestMethod -Uri ($uri -f $date) -Method Get
+    Write-Host ('Received {0} records' -f $result.data.Count) -ForegroundColor Yellow
+    $result
+}
+
+function get-tga-raw ($date = '2020-01-01')
+{
+    $path = "tga.json"
 
     if (Test-Path $path)
     {
         $data = Get-Content $path | ConvertFrom-Json
         $last_date = $data[-1].record_date
         $since = (Get-Date $last_date).AddDays(1).ToString('yyyy-MM-dd')
-        Write-Host ("Retrieving records since: {0}" -f $since) -ForegroundColor Yellow
-        $result = Invoke-RestMethod -Uri ($uri -f $since) -Method Get
-        Write-Host ('Records retrieved: {0}' -f $result.data.Count) -ForegroundColor Yellow
+                
+        $result = download-tga $since
+
         if ($result.data.Count -gt 0)
         {
             $data + $result.data | ConvertTo-Json > $path
@@ -31,13 +39,24 @@ function get-tga ($date)
     }
     else
     {
-        Write-Host 'Retrieving TGA data' -ForegroundColor Yellow
-        $result = Invoke-RestMethod -Uri ($uri -f $date) -Method Get
-        Write-Host ('Retrieved {0} records' -f $result.data.Count)
+        $result = download-tga $date
         $result.data | ConvertTo-Json > $path
         $result.data
     }
 }
+
+function get-tga ($date = '2020-01-01')
+{
+    $result = get-tga-raw
+
+    foreach ($row in $result)
+    {
+        $row.open_today_bal = [decimal] $row.open_today_bal
+    }
+
+    $result | Sort-Object record_date
+}
+
 # ----------------------------------------------------------------------
 function download-rrp ($date)
 {
@@ -56,15 +75,17 @@ function get-rrp ($date)
         $data = Get-Content $path | ConvertFrom-Json
         $last_date = $data[-1].operationDate
         $since = (Get-Date $last_date).AddDays(1) | to-datestamp
-        $result = download-rrp $since
+        $result = @(download-rrp $since)
         if ($result.Count -gt 0)
         {
+            Write-Host ('Adding {0} items' -f $result.Count) -ForegroundColor Yellow
             $new = $data + $result 
             $new | ConvertTo-Json > $path
             $new
         }
         else
         {
+            Write-Host 'No new items found' -ForegroundColor Yellow
             $data
         }
     }
@@ -75,30 +96,70 @@ function get-rrp ($date)
         $result
     }
 }
+
+$tga = get-tga
 # ----------------------------------------------------------------------
 
-# function get-recent-reverse-repo ()
+# $series = 'WALCL'
+# $date = '2023-03-01'
+
+function download-fred-series ($series, $date)
+{
+    Write-Host ('Downloading {0} series since: {1}' -f $series, $date) -ForegroundColor Yellow
+    $result = Invoke-RestMethod ('https://fred.stlouisfed.org/graph/fredgraph.csv?id={0}&cosd={1}' -f $series, $date)
+    $data = @($result | ConvertFrom-Csv)
+    Write-Host ('Received {0} items' -f $data.Count) -ForegroundColor Yellow
+    $data
+}
+
+function get-fred-series ($series, $date)
+{
+    $path = ("{0}.json" -f $series)
+
+    if (Test-Path $path)
+    {
+        $data = Get-Content $path | ConvertFrom-Json
+        $last_date = $data[-1].DATE
+        $result = download-fred-series $series $last_date
+        $items = $result | Where-Object DATE -gt $last_date
+
+        if ($items.Count -gt 0)
+        {
+            Write-Host ('Adding {0} items' -f $items.Count)
+            $new = $data + $items
+            $new | ConvertTo-Json > $path
+            $new
+        }
+        else
+        {
+            Write-Host 'No new items found' -ForegroundColor Yellow
+            $data
+        }
+    }
+    else
+    {
+        $result = download-fred-series $series $date
+        $result | ConvertTo-Json > $path
+        $result
+    }
+}
+
+# $data = get-fred-series 'WALCL' '2022-01-01'
+
+# ----------------------------------------------------------------------
+# function get-recent-walcl ()
 # {
-#     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
+#     $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL'
 
-#     $result = Invoke-RestMethod ('https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json?startDate={0}' -f $date)
-
-#     $result
+#     $result | ConvertFrom-Csv
 # }
-# ----------------------------------------------------------------------
-function get-recent-walcl ()
-{
-    $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL'
 
-    $result | ConvertFrom-Csv
-}
+# function get-recent-wshosho ()
+# {
+#     $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WSHOSHO'
 
-function get-recent-wshosho ()
-{
-    $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WSHOSHO'
-
-    $result | ConvertFrom-Csv
-}
+#     $result | ConvertFrom-Csv
+# }
 
 function get-sp500 ()
 {
@@ -128,11 +189,10 @@ function delta ($table, $a, $b)
     }
 }
 # ----------------------------------------------------------------------
-# $tga = get-recent-tga
-$tga = get-tga $date
-# $rrp = get-recent-reverse-repo
+$tga = get-tga-raw $date
 $rrp = get-rrp $date
-$fed = get-recent-wshosho
+$fed = get-fred-series 'WSHOSHO' $date
+
 $sp  = get-sp500
 
 if ($rrp.GetType().Name -eq 'String')
