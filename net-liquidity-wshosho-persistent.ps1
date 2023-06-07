@@ -1,5 +1,5 @@
 ﻿
-Param($date = '2022-04-01', $days = 365*2, [switch]$csv, [switch]$data)
+Param($date = '2022-04-01', $days = 365*2, [switch]$csv, [switch]$data, [switch]$skip_chart)
 # ----------------------------------------------------------------------
 function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
 {
@@ -15,7 +15,7 @@ function download-tga ($date)
     $result
 }
 
-function get-tga-raw ($date = '2020-01-01')
+function get-tga-raw ($date = '2020-04-01')
 {
     $path = "tga.json"
 
@@ -45,7 +45,7 @@ function get-tga-raw ($date = '2020-01-01')
     }
 }
 
-function get-tga ($date = '2020-01-01')
+function get-tga ($date = '2020-04-01')
 {
     $result = get-tga-raw
 
@@ -66,7 +66,7 @@ function download-rrp ($date)
     $result.repo.operations | Sort-Object operationDate
 }
 
-function get-rrp ($date)
+function get-rrp-raw ($date = '2020-04-01')
 {
     $path = "rrp.json"
 
@@ -97,7 +97,17 @@ function get-rrp ($date)
     }
 }
 
-$tga = get-tga
+function get-rrp ($date = '2020-04-01')
+{
+    $result = get-rrp-raw $date
+
+    foreach ($row in $result)
+    {
+        $row.totalAmtAccepted = [decimal] $row.totalAmtAccepted
+    }
+
+    $result | Sort-Object operationDate
+}
 # ----------------------------------------------------------------------
 
 # $series = 'WALCL'
@@ -112,7 +122,7 @@ function download-fred-series ($series, $date)
     $data
 }
 
-function get-fred-series ($series, $date)
+function get-fred-series-raw ($series, $date)
 {
     $path = ("{0}.json" -f $series)
 
@@ -144,31 +154,28 @@ function get-fred-series ($series, $date)
     }
 }
 
-# $data = get-fred-series 'WALCL' '2022-01-01'
-
-# ----------------------------------------------------------------------
-# function get-recent-walcl ()
-# {
-#     $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL'
-
-#     $result | ConvertFrom-Csv
-# }
-
-# function get-recent-wshosho ()
-# {
-#     $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=WSHOSHO'
-
-#     $result | ConvertFrom-Csv
-# }
-
-function get-sp500 ()
+function get-fred-series ($series, $date = '2020-04-01')
 {
-    $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
+    $result = get-fred-series-raw $series $date
 
-    $result = Invoke-RestMethod ('https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500&cosd={0}' -f $date)
-    
-    $result | ConvertFrom-Csv | Where-Object SP500 -NE '.'
+    $result = $result | Where-Object $series -NE '.'
+
+    foreach ($row in $result)
+    {
+        $row.$series = [decimal] $row.$series
+    }
+
+    $result | Sort-Object DATE 
 }
+
+# function get-sp500 ()
+# {
+#     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
+
+#     $result = Invoke-RestMethod ('https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500&cosd={0}' -f $date)
+    
+#     $result | ConvertFrom-Csv | Where-Object SP500 -NE '.'
+# }
 
 function delta ($table, $a, $b)
 {
@@ -189,37 +196,40 @@ function delta ($table, $a, $b)
     }
 }
 # ----------------------------------------------------------------------
-$tga = get-tga-raw $date
-$rrp = get-rrp $date
-$fed = get-fred-series 'WSHOSHO' $date
+$tga_result = get-tga-raw $date
+$rrp_result = get-rrp     $date
+$fed_result = get-fred-series 'WSHOSHO' $date
+$sp_result  = get-fred-series 'SP500'   $date
 
-$sp  = get-sp500
-
-if ($rrp.GetType().Name -eq 'String')
+if ($rrp_result.GetType().Name -eq 'String')
 {
     Write-Host 'Issue contacting markets.newyorkfed.org' -ForegroundColor Yellow
     exit 
 }
 
-$tga_sorted = $tga                   | Sort-Object record_date
-# $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise'
-# $rrp_sorted = $rrp.repo.operations | Sort-Object operationDate | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
-$rrp_sorted = $rrp | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
+$tga_sorted = $tga_result | Sort-Object record_date
+$rrp_sorted = $rrp_result | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
+$fed_sorted = $fed_result | Sort-Object DATE
+$sp_sorted  = $sp_result  | Sort-Object DATE
 
-$fed_sorted = $fed                 | Sort-Object DATE
-$sp_sorted  = $sp                  | Sort-Object DATE
+$earliest = @(
+    $tga_sorted[0].record_date
+    $rrp_sorted[0].operationDate
+    $fed_sorted[0].DATE
+    $sp_sorted[0].DATE
+) | Measure-Object -Maximum | % Maximum
 
-$tga_dates = $tga | ForEach-Object { $_.record_date }
-$rrp_dates = $rrp | ForEach-Object { $_.operationDate }
-$fed_dates = $fed | ForEach-Object { $_.DATE }
+# $tga_dates = $tga | ForEach-Object { $_.record_date }
+# $rrp_dates = $rrp | ForEach-Object { $_.operationDate }
+# $fed_dates = $fed | ForEach-Object { $_.DATE }
 
-$earliest = ($tga_dates | Sort-Object)[0]
+# $earliest = ($tga_dates | Sort-Object)[0]
 
 $dates = 
-    @($tga                 | ForEach-Object { $_.record_date   }) +
-    @($rrp                 | ForEach-Object { $_.operationDate }) +
-    @($fed                 | ForEach-Object { $_.DATE          }) +
-    @($sp                  | ForEach-Object { $_.DATE          }) | 
+    @($tga_result                 | ForEach-Object { $_.record_date   }) +
+    @($rrp_result                 | ForEach-Object { $_.operationDate }) +
+    @($fed_result                 | ForEach-Object { $_.DATE          }) +
+    @($sp_result                  | ForEach-Object { $_.DATE          }) | 
     Sort-Object | 
     Select-Object -Unique | 
     Where-Object { $_ -ge $earliest }
@@ -362,7 +372,11 @@ if ($csv)
     $table | Export-Csv ('net-liquidity-{0}.csv' -f (Get-Date -Format 'yyyy-MM-dd')) -NoTypeInformation
 }
 # ----------------------------------------------------------------------
-
+if ($skip_chart)
+{
+    exit
+}
+# ----------------------------------------------------------------------
 $json = @{
     chart = @{
         type = 'bar'
@@ -430,3 +444,5 @@ exit
 dir *.json
 del *.json
 del rrp.json
+# ----------------------------------------------------------------------
+. .\net-liquidity-wshosho-persistent.ps1 -skip_chart
