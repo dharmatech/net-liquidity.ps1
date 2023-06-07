@@ -109,10 +109,6 @@ function get-rrp ($date = '2020-04-01')
     $result | Sort-Object operationDate
 }
 # ----------------------------------------------------------------------
-
-# $series = 'WALCL'
-# $date = '2023-03-01'
-
 function download-fred-series ($series, $date)
 {
     Write-Host ('Downloading {0} series since: {1}' -f $series, $date) -ForegroundColor Yellow
@@ -168,15 +164,6 @@ function get-fred-series ($series, $date = '2020-04-01')
     $result | Sort-Object DATE 
 }
 
-# function get-sp500 ()
-# {
-#     $date = (Get-Date).AddDays(-$days).ToString('yyyy-MM-dd')
-
-#     $result = Invoke-RestMethod ('https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500&cosd={0}' -f $date)
-    
-#     $result | ConvertFrom-Csv | Where-Object SP500 -NE '.'
-# }
-
 function delta ($table, $a, $b)
 {
     if ($b -eq $null)
@@ -196,8 +183,8 @@ function delta ($table, $a, $b)
     }
 }
 # ----------------------------------------------------------------------
-$tga_result = get-tga-raw $date
-$rrp_result = get-rrp     $date
+$tga_result = get-tga-raw               $date
+$rrp_result = get-rrp                   $date | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
 $fed_result = get-fred-series 'WSHOSHO' $date
 $sp_result  = get-fred-series 'SP500'   $date
 
@@ -207,23 +194,12 @@ if ($rrp_result.GetType().Name -eq 'String')
     exit 
 }
 
-$tga_sorted = $tga_result | Sort-Object record_date
-$rrp_sorted = $rrp_result | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
-$fed_sorted = $fed_result | Sort-Object DATE
-$sp_sorted  = $sp_result  | Sort-Object DATE
-
 $earliest = @(
-    $tga_sorted[0].record_date
-    $rrp_sorted[0].operationDate
-    $fed_sorted[0].DATE
-    $sp_sorted[0].DATE
+    $tga_result[0].record_date
+    $rrp_result[0].operationDate
+    $fed_result[0].DATE
+    $sp_result[0].DATE
 ) | Measure-Object -Maximum | % Maximum
-
-# $tga_dates = $tga | ForEach-Object { $_.record_date }
-# $rrp_dates = $rrp | ForEach-Object { $_.operationDate }
-# $fed_dates = $fed | ForEach-Object { $_.DATE }
-
-# $earliest = ($tga_dates | Sort-Object)[0]
 
 $dates = 
     @($tga_result                 | ForEach-Object { $_.record_date   }) +
@@ -238,10 +214,10 @@ $dates =
 # ----------------------------------------------------------------------
 $table = foreach ($date in $dates)
 {
-    $tga_record = $tga_sorted.Where({ $_.record_date   -le $date }, 'Last')[0]
-    $rrp_record = $rrp_sorted.Where({ $_.operationDate -le $date }, 'Last')[0]
-    $fed_record = $fed_sorted.Where({ $_.DATE          -le $date }, 'Last')[0]
-    $sp_record  = $sp_sorted.Where( { $_.DATE          -le $date }, 'Last')[0]
+    $tga_record = $tga_result.Where({ $_.record_date   -le $date }, 'Last')[0]
+    $rrp_record = $rrp_result.Where({ $_.operationDate -le $date }, 'Last')[0]
+    $fed_record = $fed_result.Where({ $_.DATE          -le $date }, 'Last')[0]
+    $sp_record  = $sp_result.Where( { $_.DATE          -le $date }, 'Last')[0]
 
     # $fed = [decimal] $fed_record.WALCL * 1000 * 1000
     $fed = [decimal] $fed_record.WSHOSHO * 1000 * 1000
