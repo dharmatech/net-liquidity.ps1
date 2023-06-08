@@ -6,6 +6,27 @@ function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
     $val.ToString('yyyy-MM-dd')
 }
 # ----------------------------------------------------------------------
+function download-tga-old ($date)
+{
+    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA)&fields=record_date,close_today_bal&page[number]=1&page[size]=900"    
+    Write-Host ('Downloading TGA data since {0}' -f $date) -ForegroundColor Yellow
+    $result = Invoke-RestMethod -Uri ($uri -f $date) -Method Get
+    Write-Host ('Received {0} records' -f $result.data.Count) -ForegroundColor Yellow
+    $result    
+}
+
+
+
+if ((Test-Path tga-old.json) -eq $false)
+{
+    $tga_result_old = download-tga-old '2022-01-01'
+
+    $tga_result_old.data | Select-Object record_date, @{ Label = 'open_today_bal'; Expression = { $_.close_today_bal } } | ConvertTo-Json > 'tga-old.json'
+}
+
+
+
+# ----------------------------------------------------------------------
 function download-tga ($date)
 {
     $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"    
@@ -183,7 +204,7 @@ function delta ($table, $a, $b)
     }
 }
 # ----------------------------------------------------------------------
-$tga_result = get-tga-raw               $date
+$tga_result = get-tga                   $date
 $rrp_result = get-rrp                   $date | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
 $fed_result = get-fred-series 'WSHOSHO' $date
 $sp_result  = get-fred-series 'SP500'   $date
