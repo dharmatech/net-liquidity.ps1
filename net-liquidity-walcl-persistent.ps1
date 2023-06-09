@@ -165,11 +165,11 @@ function get-fred-series-raw ($series, $date)
         $data = Get-Content $path | ConvertFrom-Json
         $last_date = $data[-1].DATE
         $result = download-fred-series $series $last_date
-        $items = $result | Where-Object DATE -gt $last_date
+        $items = @($result | Where-Object DATE -gt $last_date)
 
         if ($items.Count -gt 0)
         {
-            Write-Host ('Adding {0} items' -f $items.Count)
+            Write-Host ('Adding {0} items' -f $items.Count) -ForegroundColor Yellow
             $new = $data + $items
             $new | ConvertTo-Json > $path
             $new
