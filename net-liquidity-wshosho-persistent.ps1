@@ -1,5 +1,5 @@
 ﻿
-Param($date = '2022-04-01', $days = 365*2, [switch]$csv, [switch]$data, [switch]$skip_chart)
+Param($date = '2022-01-01', $days = 365*2, [switch]$csv, [switch]$data, [switch]$skip_chart)
 # ----------------------------------------------------------------------
 function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
 {
@@ -15,8 +15,6 @@ function download-tga-old ($date)
     $result    
 }
 
-
-
 if ((Test-Path tga-old.json) -eq $false)
 {
     $tga_result_old = download-tga-old '2022-01-01'
@@ -24,7 +22,17 @@ if ((Test-Path tga-old.json) -eq $false)
     $tga_result_old.data | Select-Object record_date, @{ Label = 'open_today_bal'; Expression = { $_.close_today_bal } } | ConvertTo-Json > 'tga-old.json'
 }
 
+function get-tga-old ()
+{
+    $result = Get-Content .\tga-old.json | ConvertFrom-Json
 
+    foreach ($row in $result)
+    {
+        $row.open_today_bal = [decimal] $row.open_today_bal
+    }
+
+    $result | Sort-Object record_date
+}
 
 # ----------------------------------------------------------------------
 function download-tga ($date)
@@ -36,7 +44,7 @@ function download-tga ($date)
     $result
 }
 
-function get-tga-raw ($date = '2020-04-01')
+function get-tga-raw ()
 {
     $path = "tga.json"
 
@@ -60,13 +68,13 @@ function get-tga-raw ($date = '2020-04-01')
     }
     else
     {
-        $result = download-tga $date
+        $result = download-tga '2022-04-18'
         $result.data | ConvertTo-Json > $path
         $result.data
     }
 }
 
-function get-tga ($date = '2020-04-01')
+function get-tga ()
 {
     $result = get-tga-raw
 
@@ -76,6 +84,15 @@ function get-tga ($date = '2020-04-01')
     }
 
     $result | Sort-Object record_date
+}
+
+function get-tga-all ()
+{
+    $old = get-tga-old
+
+    $new = get-tga
+
+    $old + $new
 }
 
 # ----------------------------------------------------------------------
@@ -204,7 +221,9 @@ function delta ($table, $a, $b)
     }
 }
 # ----------------------------------------------------------------------
-$tga_result = get-tga                   $date
+# $tga_result = get-tga                   $date
+$tga_result = get-tga-all
+
 $rrp_result = get-rrp                   $date | Where-Object note -NotMatch 'Small Value Exercise' | Where-Object totalAmtAccepted -NE 0
 $fed_result = get-fred-series 'WSHOSHO' $date
 $sp_result  = get-fred-series 'SP500'   $date
