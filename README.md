@@ -50,7 +50,7 @@ TGA is reported for the previous day. So in general, only the previous day's Net
 
 Go to this page:
 
-https://github.com/dharmatech/net-liquidity.ps1/blob/master/net-liquidity.ps1
+https://github.com/dharmatech/net-liquidity.ps1/blob/master/net-liquidity-walcl.ps1
 
 Right-click **Raw** and select **Save link as...**:
 
@@ -58,8 +58,8 @@ Right-click **Raw** and select **Save link as...**:
 
 If you're on Windows, you may have to unblock the file from a PowerShell console:
 
-    Unblock-File .\net-liquidity.ps1
+    Unblock-File .\net-liquidity-walcl.ps1
 
 Run the file at a PowerShell prompt:
 
-    .\net-liquidity.ps1
+    .\net-liquidity-walcl.ps1
