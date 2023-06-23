@@ -100,8 +100,16 @@ function download-rrp ($date)
 {
     Write-Host ('Downloading RRP data since: {0}' -f $date) -ForegroundColor Yellow
     $result = Invoke-RestMethod ('https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json?startDate={0}' -f $date)
-    Write-Host ('Received {0} items' -f $result.repo.operations.Count) -ForegroundColor Yellow
-    $result.repo.operations | Sort-Object operationDate
+
+    if ($result.GetType().Name -eq 'String')
+    {
+        Write-Host 'Issue contacting markets.newyorkfed.org' -ForegroundColor Red
+    }
+    else
+    {
+        Write-Host ('Received {0} items' -f $result.repo.operations.Count) -ForegroundColor Yellow
+        $result.repo.operations | Sort-Object operationDate
+    }
 }
 
 function get-rrp-raw ($date = '2020-04-01')
