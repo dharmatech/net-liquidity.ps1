@@ -379,9 +379,8 @@ function val-to-color ($val)
 }
 
 # ----------------------------------------------------------------------
-
-#            2022-10-25    8,743,922,000,000                   0   2,195,616,000,000     -46,428,000,000     636,785,000,000                   0   5,911,521,000,000      46,428,000,000      3749
-  $header = 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
+#            2023-06-23    8,362,060,000,000                   0   1,969,380,000,000     -25,331,000,000     366,505,000,000                   0     -71,875,000,000                   0   6,098,050,000,000      25,331,000,000      3919
+  $header = 'DATE                      WALCL              CHANGE                 RRP              CHANGE                 TGA              CHANGE                 REM              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
 # $header = 'DATE                    WSHOSHO              CHANGE                 RRP              CHANGE                 TGA              CHANGE       NET LIQUIDITY              CHANGE    SPX FV'
 
 Write-Host $header
@@ -397,7 +396,7 @@ foreach ($elt in $table | Select-Object -Skip 1)
     Write-Host ('{0,20}' -f $elt.tga.ToString('N0'))                                                                            -NoNewline
     Write-Host ('{0,20}' -f $elt.tga_change.ToString('N0'))           -ForegroundColor (val-to-color $elt.tga_change)           -NoNewline
     Write-Host ('{0,20}' -f $elt.rem.ToString('N0'))                                                                            -NoNewline
-    Write-Host ('{0,20}' -f $elt.rem_change.ToString('N0'))           -ForegroundColor (val-to-color $elt.tga_change)           -NoNewline    
+    Write-Host ('{0,20}' -f $elt.rem_change.ToString('N0'))           -ForegroundColor (val-to-color $elt.rem_change)           -NoNewline    
     Write-Host ('{0,20}' -f $elt.net_liquidity.ToString('N0'))                                                                  -NoNewline
     Write-Host ('{0,20}' -f $elt.net_liquidity_change.ToString('N0')) -ForegroundColor (val-to-color $elt.net_liquidity_change) -NoNewline
     Write-Host ('{0,10}' -f $elt.spx_fv)    
