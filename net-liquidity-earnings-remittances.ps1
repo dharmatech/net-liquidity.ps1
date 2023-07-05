@@ -403,6 +403,26 @@ foreach ($elt in $table | Select-Object -Skip 1)
 }
 
 Write-Host $header
+
+# ----------------------------------------------------------------------
+# TGA refill note
+# ----------------------------------------------------------------------
+$a = $table | ? date -EQ '2023-06-01'
+# $a = $table | ? date -EQ '2023-06-02'
+# $a = $table | ? date -EQ '2023-06-05'
+$b = $table[-1]
+
+$tga_change = $b.tga - $a.tga
+$rrp_change = $b.rrp - $a.rrp
+
+$rest = $tga_change + $rrp_change
+
+Write-Host 'Since 2023-06-01:' -ForegroundColor Yellow
+Write-Host
+Write-Host ('TGA change                  {0,17}'    -f $tga_change.ToString('N0'))         -ForegroundColor Yellow
+Write-Host ('RRP change                  {0,17}'    -f $rrp_change.ToString('N0'))         -ForegroundColor Yellow
+Write-Host ('TGA refill covered by RRP   {0,4:N0}%' -f (-$rrp_change / $tga_change * 100)) -ForegroundColor Yellow
+Write-Host ('Not covered by RRP          {0,17}'    -f $rest.ToString('N0'))               -ForegroundColor Yellow
 # ----------------------------------------------------------------------
 if ($csv)
 {
@@ -487,3 +507,4 @@ del rrp.json
 # ----------------------------------------------------------------------
 . .\net-liquidity-wshosho-persistent.ps1 -skip_chart
 # ----------------------------------------------------------------------
+
