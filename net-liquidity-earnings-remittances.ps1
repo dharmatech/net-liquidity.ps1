@@ -24,7 +24,7 @@ if ((Test-Path tga-old.json) -eq $false)
 
 function get-tga-old ()
 {
-    $result = Get-Content .\tga-old.json | ConvertFrom-Json
+    $result = Get-Content tga-old.json | ConvertFrom-Json
 
     foreach ($row in $result)
     {
