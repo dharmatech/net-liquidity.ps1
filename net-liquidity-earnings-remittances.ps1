@@ -423,6 +423,23 @@ Write-Host ('TGA change                  {0,17}'    -f $tga_change.ToString('N0'
 Write-Host ('RRP change                  {0,17}'    -f $rrp_change.ToString('N0'))         -ForegroundColor Yellow
 Write-Host ('TGA refill covered by RRP   {0,4:N0}%' -f (-$rrp_change / $tga_change * 100)) -ForegroundColor Yellow
 Write-Host ('Not covered by RRP          {0,17}'    -f $rest.ToString('N0'))               -ForegroundColor Yellow
+
+Write-Host
+
+function days-remaining-until ([datetime]$date)
+{
+    ($date - (Get-Date)).Days
+}
+
+$sep30_target = 650000000000
+$oct31_target = 750000000000
+
+# Write-Host ("TGA change needed for Sept 30th target: {0:N0}    days remaining: {1}   amount per day: {2:N0}" -f ($sep30_target - $b.tga), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / (days-remaining-until '2023-09-30')))  -ForegroundColor Yellow
+# Write-Host ('TGA change needed for Oct  31th target: {0:N0}    days remaining: {1}   amount per day: {2:N0}' -f ($oct31_target - $b.tga), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / (days-remaining-until '2023-10-31')))  -ForegroundColor Yellow
+
+Write-Host ("TGA change needed for Sept 30th target: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')))  -ForegroundColor Yellow
+Write-Host ('TGA change needed for Oct  31th target: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B' -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')))  -ForegroundColor Yellow
+
 # ----------------------------------------------------------------------
 if ($csv)
 {
@@ -434,18 +451,20 @@ if ($skip_chart)
     exit
 }
 # ----------------------------------------------------------------------
+$items = $table | Select-Object -Last $days
+
 $json = @{
     chart = @{
         type = 'bar'
         data = @{
-            labels = $table.ForEach({ $_.date })
+            labels = $items.ForEach({ $_.date })
             datasets = @(
-                @{ label = 'NL';      data = $table.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
-                @{ label = 'WALCL';   data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-              # @{ label = 'WSHOSHO'; data = $table.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-                @{ label = 'RRP';     data = $table.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-                @{ label = 'TGA';     data = $table.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
-                @{ label = 'REM';     data = $table.ForEach({ $_.rem           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'NL';      data = $items.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
+                @{ label = 'WALCL';   data = $items.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+              # @{ label = 'WSHOSHO'; data = $items.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'RRP';     data = $items.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'TGA';     data = $items.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+                @{ label = 'REM';     data = $items.ForEach({ $_.rem           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
             )
         }
         options = @{
@@ -464,14 +483,14 @@ Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
 $chart = @{
     type = 'line'
     data = @{
-        labels = $table.ForEach({ $_.date })
+        labels = $items.ForEach({ $_.date })
         datasets = @(
-            @{ label = 'SPX';        data = $table.ForEach({ $_.spx      }); pointRadius = 2; borderColor = '#4E79A7' },
-            @{ label = 'Fair Value'; data = $table.ForEach({ $_.spx_fv   }); pointRadius = 2; borderColor = '#F28E2B' },
-            @{ label = 'Low';        data = $table.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
-            @{ label = 'High';       data = $table.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
+            @{ label = 'SPX';        data = $items.ForEach({ $_.spx      }); pointRadius = 2; borderColor = '#4E79A7' },
+            @{ label = 'Fair Value'; data = $items.ForEach({ $_.spx_fv   }); pointRadius = 2; borderColor = '#F28E2B' },
+            @{ label = 'Low';        data = $items.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
+            @{ label = 'High';       data = $items.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
 
-          # @{ label = 'SPX / NL';   data = $table.ForEach({ $_.spx_div_nl }); pointRadius = 2; borderColor = '#f06464'; hidden = $true }
+          # @{ label = 'SPX / NL';   data = $items.ForEach({ $_.spx_div_nl }); pointRadius = 2; borderColor = '#f06464'; hidden = $true }
         )
     }
     options = @{
@@ -508,3 +527,6 @@ del rrp.json
 . .\net-liquidity-wshosho-persistent.ps1 -skip_chart
 # ----------------------------------------------------------------------
 
+. .\net-liquidity-earnings-remittances.ps1 -days 150
+
+. .\net-liquidity-earnings-remittances.ps1 -days 365
