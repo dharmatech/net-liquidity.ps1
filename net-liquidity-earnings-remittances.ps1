@@ -1,5 +1,5 @@
 ﻿
-Param($date = '2022-01-01', $days = 365*2, [switch]$csv, [switch]$data, [switch]$skip_chart)
+Param($date = '2022-01-01', $days = 365*2, [switch]$csv, [switch]$data, [switch]$skip_chart, [switch]$display_chart_url)
 # ----------------------------------------------------------------------
 function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
 {
@@ -19,7 +19,7 @@ if ((Test-Path tga-old.json) -eq $false)
 {
     $tga_result_old = download-tga-old '2022-01-01'
 
-    $tga_result_old.data | Select-Object record_date, @{ Label = 'open_today_bal'; Expression = { $_.close_today_bal } } | ConvertTo-Json > 'tga-old.json'
+    $tga_result_old.data | Select-Object record_date, @{ Label = 'open_today_bal'; Expression = { $_.close_today_bal } } | ConvertTo-Json -Depth 100 > 'tga-old.json'
 }
 
 function get-tga-old ()
@@ -58,7 +58,7 @@ function get-tga-raw ()
 
         if ($result.data.Count -gt 0)
         {
-            $data + $result.data | ConvertTo-Json > $path
+            $data + $result.data | ConvertTo-Json -Depth 100 > $path
             $data + $result.data
         }
         else
@@ -69,7 +69,7 @@ function get-tga-raw ()
     else
     {
         $result = download-tga '2022-04-18'
-        $result.data | ConvertTo-Json > $path
+        $result.data | ConvertTo-Json -Depth 100 > $path
         $result.data
     }
 }
@@ -126,7 +126,7 @@ function get-rrp-raw ($date = '2020-04-01')
         {
             Write-Host ('Adding {0} items' -f $result.Count) -ForegroundColor Yellow
             $new = $data + $result 
-            $new | ConvertTo-Json > $path
+            $new | ConvertTo-Json -Depth 100 > $path
             $new
         }
         else
@@ -138,7 +138,7 @@ function get-rrp-raw ($date = '2020-04-01')
     else
     {
         $result = download-rrp $date
-        $result | ConvertTo-Json > $path
+        $result | ConvertTo-Json -Depth 100 > $path
         $result
     }
 }
@@ -179,7 +179,7 @@ function get-fred-series-raw ($series, $date)
         {
             Write-Host ('Adding {0} items' -f $items.Count) -ForegroundColor Yellow
             $new = $data + $items
-            $new | ConvertTo-Json > $path
+            $new | ConvertTo-Json -Depth 100 > $path
             $new
         }
         else
@@ -191,7 +191,7 @@ function get-fred-series-raw ($series, $date)
     else
     {
         $result = download-fred-series $series $date
-        $result | ConvertTo-Json > $path
+        $result | ConvertTo-Json -Depth 100 > $path
         $result
     }
 }
@@ -478,7 +478,16 @@ $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/creat
 
 $id = ([System.Uri] $result.url).Segments[-1]
 
-Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+if ($display_chart_url)
+{
+    Write-Host
+
+    Write-Host ('Net liquidity: https://quickchart.io/chart-maker/view/{0}' -f $id) -ForegroundColor Yellow
+}
+else
+{
+    Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+}
 # ----------------------------------------------------------------------
 $chart = @{
     type = 'line'
@@ -510,7 +519,14 @@ $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/creat
 
 $id = ([System.Uri] $result.url).Segments[-1]
 
-Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+if ($display_chart_url)
+{
+    Write-Host ('SPX Fair Value: https://quickchart.io/chart-maker/view/{0}' -f $id) -ForegroundColor Yellow
+}
+else
+{
+    Start-Process ('https://quickchart.io/chart-maker/view/{0}' -f $id)
+}
 # ----------------------------------------------------------------------
 exit
 # ----------------------------------------------------------------------
@@ -530,3 +546,5 @@ del rrp.json
 . .\net-liquidity-earnings-remittances.ps1 -days 150
 
 . .\net-liquidity-earnings-remittances.ps1 -days 365
+
+. .\net-liquidity-earnings-remittances.ps1 -display_chart_url
