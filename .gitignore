@@ -9,3 +9,7 @@ net-liquidity-wshosho-chart-partial.html
 net-liquidity-wshosho copy.ps1
 *.json
 out.html
+net-liquidity-chart.html
+spx-fair-value-chart.html
+test copy.html
+test.html

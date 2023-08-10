@@ -1,5 +1,5 @@
 ﻿
-Param($date = '2022-01-01', $days = 365*2, [switch]$csv, [switch]$data, [switch]$skip_chart, [switch]$display_chart_url)
+Param($date = '2022-01-01', $days = 365*2, [switch]$csv, [switch]$data, [switch]$skip_chart, [switch]$display_chart_url, [switch]$save_iframe)
 # ----------------------------------------------------------------------
 function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
 {
@@ -451,6 +451,24 @@ if ($skip_chart)
     exit
 }
 # ----------------------------------------------------------------------
+
+$html_template = @"
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{0}</title>
+    </head>
+    <body>
+        <div style="padding-bottom: 56.25%; position: relative; display:block; width: 100%;">
+            <iframe width="100%" height="100%" src="https://quickchart.io/chart-maker/view/{1}" frameborder="0" style="position: absolute; top:0; left: 0"></iframe>
+        </div>
+    </body>
+</html>
+"@
+
+# $html_template -f 'Net Liquidity', $id
+
+# ----------------------------------------------------------------------
 $items = $table | Select-Object -Last $days
 
 $json = @{
@@ -477,6 +495,11 @@ $json = @{
 $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/create' -Body $json -ContentType 'application/json'
 
 $id = ([System.Uri] $result.url).Segments[-1]
+
+if ($save_iframe)
+{
+    $html_template -f 'Net Liquidity', $id > net-liquidity-chart.html
+}
 
 if ($display_chart_url)
 {
@@ -519,6 +542,11 @@ $result = Invoke-RestMethod -Method Post -Uri 'https://quickchart.io/chart/creat
 
 $id = ([System.Uri] $result.url).Segments[-1]
 
+if ($save_iframe)
+{
+    $html_template -f 'SPX Fair Value', $id > spx-fair-value-chart.html
+}
+
 if ($display_chart_url)
 {
     Write-Host ('SPX Fair Value: https://quickchart.io/chart-maker/view/{0}' -f $id) -ForegroundColor Yellow
@@ -548,3 +576,5 @@ del rrp.json
 . .\net-liquidity-earnings-remittances.ps1 -days 365
 
 . .\net-liquidity-earnings-remittances.ps1 -display_chart_url
+
+. .\net-liquidity-earnings-remittances.ps1 -display_chart_url -save_iframe
