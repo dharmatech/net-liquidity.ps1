@@ -437,8 +437,23 @@ $oct31_target = 750000000000
 # Write-Host ("TGA change needed for Sept 30th target: {0:N0}    days remaining: {1}   amount per day: {2:N0}" -f ($sep30_target - $b.tga), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / (days-remaining-until '2023-09-30')))  -ForegroundColor Yellow
 # Write-Host ('TGA change needed for Oct  31th target: {0:N0}    days remaining: {1}   amount per day: {2:N0}' -f ($oct31_target - $b.tga), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / (days-remaining-until '2023-10-31')))  -ForegroundColor Yellow
 
-Write-Host ("TGA change needed for Sept 30th target: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')))  -ForegroundColor Yellow
-Write-Host ('TGA change needed for Oct  31th target: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B' -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')))  -ForegroundColor Yellow
+# Write-Host ("TGA change needed for Sept 30th target: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')))  -ForegroundColor Yellow
+# Write-Host ('TGA change needed for Oct  31th target: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B' -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')))  -ForegroundColor Yellow
+
+function to-billions ($val)
+{
+    $val / 1000 / 1000 / 1000
+}
+
+# Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: $($PSStyle.Foreground.Green){4:N0} B$($PSStyle.Reset)" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
+# Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: $($PSStyle.Foreground.Green){4:N0} B$($PSStyle.Reset)" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
+
+$rrp_sep_30_coverage = ($b.rrp - ($sep30_target - $b.tga))
+$rrp_oct_31_coverage = ($b.rrp - ($oct31_target - $b.tga))
+
+Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
+Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
+
 
 # ----------------------------------------------------------------------
 if ($csv)
@@ -477,12 +492,24 @@ $json = @{
         data = @{
             labels = $items.ForEach({ $_.date })
             datasets = @(
+                @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; borderColor = '#EDC948' }
+                @{ label = 'RRP Oct 31st TGA coverage';     data = $items.ForEach({ $rrp_oct_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; borderColor = '#B07AA1' }
+
+                # @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0 }
+                # @{ label = 'RRP Oct 31st TGA coverage';     data = $items.ForEach({ $rrp_oct_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0 }                
+
                 @{ label = 'NL';      data = $items.ForEach({ $_.net_liquidity / 1000 / 1000 / 1000 / 1000 });                }
                 @{ label = 'WALCL';   data = $items.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
               # @{ label = 'WSHOSHO'; data = $items.ForEach({ $_.fed           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
                 @{ label = 'RRP';     data = $items.ForEach({ $_.rrp           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+
+                
+
                 @{ label = 'TGA';     data = $items.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
                 @{ label = 'REM';     data = $items.ForEach({ $_.rem           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
+
+                
+                
             )
         }
         options = @{
@@ -578,3 +605,9 @@ del rrp.json
 . .\net-liquidity-earnings-remittances.ps1 -display_chart_url
 
 . .\net-liquidity-earnings-remittances.ps1 -display_chart_url -save_iframe
+
+
+
+$template = Get-Content .\net-liquidity-table-template.html
+
+$template -replace '---BODY---', 123
