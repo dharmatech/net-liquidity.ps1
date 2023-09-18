@@ -417,14 +417,14 @@ $rrp_change = $b.rrp - $a.rrp
 
 $rest = $tga_change + $rrp_change
 
-Write-Host 'Since 2023-06-01:' -ForegroundColor Yellow
-Write-Host
-Write-Host ('TGA change                  {0,17}'    -f $tga_change.ToString('N0'))         -ForegroundColor Yellow
-Write-Host ('RRP change                  {0,17}'    -f $rrp_change.ToString('N0'))         -ForegroundColor Yellow
-Write-Host ('TGA refill covered by RRP   {0,4:N0}%' -f (-$rrp_change / $tga_change * 100)) -ForegroundColor Yellow
-Write-Host ('Not covered by RRP          {0,17}'    -f $rest.ToString('N0'))               -ForegroundColor Yellow
+# Write-Host 'Since 2023-06-01:' -ForegroundColor Yellow
+# Write-Host
+# Write-Host ('TGA change                  {0,17}'    -f $tga_change.ToString('N0'))         -ForegroundColor Yellow
+# Write-Host ('RRP change                  {0,17}'    -f $rrp_change.ToString('N0'))         -ForegroundColor Yellow
+# Write-Host ('TGA refill covered by RRP   {0,4:N0}%' -f (-$rrp_change / $tga_change * 100)) -ForegroundColor Yellow
+# Write-Host ('Not covered by RRP          {0,17}'    -f $rest.ToString('N0'))               -ForegroundColor Yellow
 
-Write-Host
+# Write-Host
 
 function days-remaining-until ([datetime]$date)
 {
@@ -433,6 +433,7 @@ function days-remaining-until ([datetime]$date)
 
 $sep30_target = 650000000000
 $oct31_target = 750000000000
+$dec31_target = 750000000000
 
 # Write-Host ("TGA change needed for Sept 30th target: {0:N0}    days remaining: {1}   amount per day: {2:N0}" -f ($sep30_target - $b.tga), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / (days-remaining-until '2023-09-30')))  -ForegroundColor Yellow
 # Write-Host ('TGA change needed for Oct  31th target: {0:N0}    days remaining: {1}   amount per day: {2:N0}' -f ($oct31_target - $b.tga), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / (days-remaining-until '2023-10-31')))  -ForegroundColor Yellow
@@ -448,12 +449,18 @@ function to-billions ($val)
 # Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: $($PSStyle.Foreground.Green){4:N0} B$($PSStyle.Reset)" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
 # Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: $($PSStyle.Foreground.Green){4:N0} B$($PSStyle.Reset)" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
 
-$rrp_sep_30_coverage = ($b.rrp - ($sep30_target - $b.tga))
-$rrp_oct_31_coverage = ($b.rrp - ($oct31_target - $b.tga))
+$rrp_sep_30_coverage = $b.rrp - ($sep30_target - $b.tga)
+$rrp_oct_31_coverage = $b.rrp - ($oct31_target - $b.tga)
+$rrp_dec_31_coverage = $b.rrp - ($dec31_target - $b.tga)  # RRP level for 100% TGA coverage
 
-Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
-Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
-
+Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
+# Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
+Write-Host ("TGA Dec  31st target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f `
+    (($dec31_target - $b.tga) / 1000 / 1000 / 1000), 
+    (days-remaining-until '2023-12-31'), 
+    (($dec31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-12-31')), 
+    ($dec31_target / 1000 / 1000 / 1000), 
+    (to-billions $rrp_dec_31_coverage))  -ForegroundColor Yellow
 
 # ----------------------------------------------------------------------
 if ($csv)
@@ -492,8 +499,9 @@ $json = @{
         data = @{
             labels = $items.ForEach({ $_.date })
             datasets = @(
-                @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; borderColor = '#EDC948' }
-                @{ label = 'RRP Oct 31st TGA coverage';     data = $items.ForEach({ $rrp_oct_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; borderColor = '#B07AA1' }
+                # @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; borderColor = '#EDC948' }
+                # # @{ label = 'RRP Oct 31st TGA coverage';     data = $items.ForEach({ $rrp_oct_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; borderColor = '#B07AA1' }
+                # @{ label = 'RRP Dec 31st TGA coverage';     data = $items.ForEach({ $rrp_dec_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; borderColor = '#B07AA1' }
 
                 # @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0 }
                 # @{ label = 'RRP Oct 31st TGA coverage';     data = $items.ForEach({ $rrp_oct_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0 }                
@@ -508,6 +516,8 @@ $json = @{
                 @{ label = 'TGA';     data = $items.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
                 @{ label = 'REM';     data = $items.ForEach({ $_.rem           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
 
+                @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; }
+                @{ label = 'RRP Dec 31st TGA coverage';     data = $items.ForEach({ $rrp_dec_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; }                
                 
                 
             )
