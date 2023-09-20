@@ -453,9 +453,9 @@ $rrp_sep_30_coverage = $b.rrp - ($sep30_target - $b.tga)
 $rrp_oct_31_coverage = $b.rrp - ($oct31_target - $b.tga)
 $rrp_dec_31_coverage = $b.rrp - ($dec31_target - $b.tga)  # RRP level for 100% TGA coverage
 
-Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
+Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2,5:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
 # Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
-Write-Host ("TGA Dec  31st target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f `
+Write-Host ("TGA Dec  31st target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2,5:N1} B   RRP level for 100% coverage: {4:N0} B" -f `
     (($dec31_target - $b.tga) / 1000 / 1000 / 1000), 
     (days-remaining-until '2023-12-31'), 
     (($dec31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-12-31')), 
@@ -516,8 +516,11 @@ $json = @{
                 @{ label = 'TGA';     data = $items.ForEach({ $_.tga           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
                 @{ label = 'REM';     data = $items.ForEach({ $_.rem           / 1000 / 1000 / 1000 / 1000 }); hidden = $true }
 
-                @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; }
-                @{ label = 'RRP Dec 31st TGA coverage';     data = $items.ForEach({ $rrp_dec_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; }                
+                @{ label = 'TGA Sept 30th target';     data = $items.ForEach({ $sep30_target / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; hidden = $true }
+                @{ label = 'TGA Dec  31st target';     data = $items.ForEach({ $dec31_target / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; hidden = $true }
+
+                @{ label = 'RRP Sep 30th TGA coverage';     data = $items.ForEach({ $rrp_sep_30_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; hidden = $true }
+                @{ label = 'RRP Dec 31st TGA coverage';     data = $items.ForEach({ $rrp_dec_31_coverage / 1000 / 1000 / 1000 / 1000 }); type = 'line'; fill = $false; pointRadius = 0; hidden = $true }                
                 
                 
             )
