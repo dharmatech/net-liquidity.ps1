@@ -8,7 +8,8 @@ function to-datestamp ([Parameter(Mandatory,ValueFromPipeline)][datetime]$val)
 # ----------------------------------------------------------------------
 function download-tga-old ($date)
 {
-    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA)&fields=record_date,close_today_bal&page[number]=1&page[size]=900"    
+    # $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA)&fields=record_date,close_today_bal&page[number]=1&page[size]=900"    
+    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA)&fields=record_date,close_today_bal&page[number]=1&page[size]=900"
     Write-Host ('Downloading TGA data since {0}' -f $date) -ForegroundColor Yellow
     $result = Invoke-RestMethod -Uri ($uri -f $date) -Method Get
     Write-Host ('Received {0} records' -f $result.data.Count) -ForegroundColor Yellow
@@ -37,7 +38,8 @@ function get-tga-old ()
 # ----------------------------------------------------------------------
 function download-tga ($date)
 {
-    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"    
+    # $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/dts_table_1?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"    
+    $uri = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/operating_cash_balance?filter=record_date:gte:{0},account_type:eq:Treasury General Account (TGA) Closing Balance&fields=record_date,open_today_bal&page[number]=1&page[size]=900"    
     Write-Host ('Downloading TGA data since {0}' -f $date) -ForegroundColor Yellow
     $result = Invoke-RestMethod -Uri ($uri -f $date) -Method Get
     Write-Host ('Received {0} records' -f $result.data.Count) -ForegroundColor Yellow
@@ -453,14 +455,14 @@ $rrp_sep_30_coverage = $b.rrp - ($sep30_target - $b.tga)
 $rrp_oct_31_coverage = $b.rrp - ($oct31_target - $b.tga)
 $rrp_dec_31_coverage = $b.rrp - ($dec31_target - $b.tga)  # RRP level for 100% TGA coverage
 
-Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2,5:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
-# Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
-Write-Host ("TGA Dec  31st target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2,5:N1} B   RRP level for 100% coverage: {4:N0} B" -f `
-    (($dec31_target - $b.tga) / 1000 / 1000 / 1000), 
-    (days-remaining-until '2023-12-31'), 
-    (($dec31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-12-31')), 
-    ($dec31_target / 1000 / 1000 / 1000), 
-    (to-billions $rrp_dec_31_coverage))  -ForegroundColor Yellow
+# Write-Host ("TGA Sept 30th target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2,5:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($sep30_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-09-30'), (($sep30_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-09-30')), ($sep30_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($sep30_target - $b.tga))))  -ForegroundColor Yellow
+# # Write-Host ("TGA Oct  31st target: {3:N0} B   change needed: {0:N0} B    days remaining: {1}   amount per day: {2:N1} B   RRP level for 100% coverage: {4:N0} B" -f (($oct31_target - $b.tga) / 1000 / 1000 / 1000), (days-remaining-until '2023-10-31'), (($oct31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-10-31')), ($oct31_target / 1000 / 1000 / 1000), (to-billions ($b.rrp - ($oct31_target - $b.tga))))  -ForegroundColor Yellow
+# Write-Host ("TGA Dec  31st target: {3:N0} B   change needed: {0,3:N0} B    days remaining: {1,3}   amount per day: {2,5:N1} B   RRP level for 100% coverage: {4:N0} B" -f `
+#     (($dec31_target - $b.tga) / 1000 / 1000 / 1000), 
+#     (days-remaining-until '2023-12-31'), 
+#     (($dec31_target - $b.tga) / 1000 / 1000 / 1000 / (days-remaining-until '2023-12-31')), 
+#     ($dec31_target / 1000 / 1000 / 1000), 
+#     (to-billions $rrp_dec_31_coverage))  -ForegroundColor Yellow
 
 # ----------------------------------------------------------------------
 if ($csv)
