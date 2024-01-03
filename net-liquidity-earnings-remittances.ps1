@@ -289,6 +289,7 @@ $table = foreach ($date in $dates)
     $spx_fv   = [math]::Round($net_liquidity / 1000 / 1000 / 1000 / 1.1 - 1625, 0)
     $spx_low  = $spx_fv - 150
     $spx_high = $spx_fv + 350
+    $spx_high_1 = $spx_fv + 350 + 361
    
     # WSHOSHO fair value
     # $spx_fv = [math]::Round($net_liquidity / 1000 / 1000 / 1000 - 1700, 0)
@@ -308,6 +309,7 @@ $table = foreach ($date in $dates)
         spx_fv   = $spx_fv
         spx_low  = $spx_low
         spx_high = $spx_high
+        spx_high_1 = $spx_high_1
 
         spx_div_nl = $spx / $net_liquidity * 1000 * 1000 * 1000
     }
@@ -559,10 +561,11 @@ $chart = @{
     data = @{
         labels = $items.ForEach({ $_.date })
         datasets = @(
-            @{ label = 'SPX';        data = $items.ForEach({ $_.spx      }); pointRadius = 2; borderColor = '#4E79A7' },
-            @{ label = 'Fair Value'; data = $items.ForEach({ $_.spx_fv   }); pointRadius = 2; borderColor = '#F28E2B' },
-            @{ label = 'Low';        data = $items.ForEach({ $_.spx_low  }); pointRadius = 2; borderColor = '#62ae67' },
-            @{ label = 'High';       data = $items.ForEach({ $_.spx_high }); pointRadius = 2; borderColor = '#f06464' }
+            @{ label = 'SPX';        data = $items.ForEach({ $_.spx      });   pointRadius = 2; borderColor = '#4E79A7' },
+            @{ label = 'Fair Value'; data = $items.ForEach({ $_.spx_fv   });   pointRadius = 2; borderColor = '#F28E2B' },
+            @{ label = 'Low';        data = $items.ForEach({ $_.spx_low  });   pointRadius = 2; borderColor = '#62ae67' },
+            @{ label = 'High';       data = $items.ForEach({ $_.spx_high });   pointRadius = 2; borderColor = '#f06464' },
+            @{ label = 'High + 1';   data = $items.ForEach({ $_.spx_high_1 }); pointRadius = 2; borderColor = '#8b0000' }
 
           # @{ label = 'SPX / NL';   data = $items.ForEach({ $_.spx_div_nl }); pointRadius = 2; borderColor = '#f06464'; hidden = $true }
         )
@@ -602,6 +605,9 @@ exit
 # ----------------------------------------------------------------------
 # Example invocations
 # ----------------------------------------------------------------------
+
+. .\net-liquidity-earnings-remittances.ps1
+
 . .\net-liquidity.ps1 -days 90
 
 . .\net-liquidity.ps1 -csv
