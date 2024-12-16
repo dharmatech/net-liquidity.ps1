@@ -166,6 +166,19 @@ function download-fred-series ($series, $date)
     $data
 }
 
+
+# $result = download-fred-series 'WALCL' '2020-04-01'
+
+# $result
+
+# # https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1320&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=WALCL&scale=left&cosd=2002-12-18&coed=2024-12-11&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=3&ost=-99999&oet=99999&mma=0&fml=a&fq=Weekly%2C%20As%20of%20Wednesday&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-12-13&revision_date=2024-12-13&nd=2002-12-18
+
+
+# $result = Invoke-RestMethod 'https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1320&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=WALCL&scale=left&cosd=2002-12-18&coed=2024-12-11&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=3&ost=-99999&oet=99999&mma=0&fml=a&fq=Weekly%2C%20As%20of%20Wednesday&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-12-13&revision_date=2024-12-13&nd=2002-12-18'
+
+# $result | ConvertFrom-Csv | Select-Object -first 10
+
+
 function get-fred-series-raw ($series, $date)
 {
     $path = ("{0}.json" -f $series)
@@ -173,9 +186,11 @@ function get-fred-series-raw ($series, $date)
     if (Test-Path $path)
     {
         $data = Get-Content $path | ConvertFrom-Json
-        $last_date = $data[-1].DATE
+        # $last_date = $data[-1].DATE
+        $last_date = $data[-1].observation_date
         $result = download-fred-series $series $last_date
-        $items = @($result | Where-Object DATE -gt $last_date)
+        # $items = @($result | Where-Object DATE -gt $last_date)
+        $items = @($result | Where-Object observation_date -gt $last_date)
 
         if ($items.Count -gt 0)
         {
@@ -198,9 +213,14 @@ function get-fred-series-raw ($series, $date)
     }
 }
 
+# $series = 'WALCL'
+
+
 function get-fred-series ($series, $date = '2020-04-01')
 {
     $result = get-fred-series-raw $series $date
+
+    # $result | Select-Object -First 10
 
     $result = $result | Where-Object $series -NE '.'
 
@@ -209,7 +229,9 @@ function get-fred-series ($series, $date = '2020-04-01')
         $row.$series = [decimal] $row.$series
     }
 
-    $result | Sort-Object DATE 
+    # $result | Sort-Object DATE 
+
+    $result | Sort-Object observation_date
 }
 
 function delta ($table, $a, $b)
@@ -247,20 +269,38 @@ if ($rrp_result.GetType().Name -eq 'String')
     exit 
 }
 
+# $earliest = @(
+#     $tga_result[0].record_date
+#     $rrp_result[0].operationDate
+#     $fed_result[0].DATE
+#     $rem_result[0].DATE
+#     $sp_result[0].DATE
+# ) | Measure-Object -Maximum | % Maximum
+
 $earliest = @(
     $tga_result[0].record_date
     $rrp_result[0].operationDate
-    $fed_result[0].DATE
-    $rem_result[0].DATE
-    $sp_result[0].DATE
+    $fed_result[0].observation_date
+    $rem_result[0].observation_date
+    $sp_result[0].observation_date
 ) | Measure-Object -Maximum | % Maximum
+
+# $dates = 
+#     @($tga_result                 | ForEach-Object { $_.record_date   }) +
+#     @($rrp_result                 | ForEach-Object { $_.operationDate }) +
+#     @($fed_result                 | ForEach-Object { $_.DATE          }) +
+#     @($rem_result                 | ForEach-Object { $_.DATE          }) +
+#     @($sp_result                  | ForEach-Object { $_.DATE          }) | 
+#     Sort-Object | 
+#     Select-Object -Unique | 
+#     Where-Object { $_ -ge $earliest }
 
 $dates = 
     @($tga_result                 | ForEach-Object { $_.record_date   }) +
     @($rrp_result                 | ForEach-Object { $_.operationDate }) +
-    @($fed_result                 | ForEach-Object { $_.DATE          }) +
-    @($rem_result                 | ForEach-Object { $_.DATE          }) +
-    @($sp_result                  | ForEach-Object { $_.DATE          }) | 
+    @($fed_result                 | ForEach-Object { $_.observation_date          }) +
+    @($rem_result                 | ForEach-Object { $_.observation_date          }) +
+    @($sp_result                  | ForEach-Object { $_.observation_date          }) | 
     Sort-Object | 
     Select-Object -Unique | 
     Where-Object { $_ -ge $earliest }
@@ -271,9 +311,9 @@ $table = foreach ($date in $dates)
 {
     $tga_record = $tga_result.Where({ $_.record_date   -le $date }, 'Last')[0]
     $rrp_record = $rrp_result.Where({ $_.operationDate -le $date }, 'Last')[0]
-    $fed_record = $fed_result.Where({ $_.DATE          -le $date }, 'Last')[0]
-    $rem_record = $rem_result.Where({ $_.DATE          -le $date }, 'Last')[0]
-    $sp_record  = $sp_result.Where( { $_.DATE          -le $date }, 'Last')[0]
+    $fed_record = $fed_result.Where({ $_.observation_date          -le $date }, 'Last')[0]
+    $rem_record = $rem_result.Where({ $_.observation_date          -le $date }, 'Last')[0]
+    $sp_record  = $sp_result.Where( { $_.observation_date          -le $date }, 'Last')[0]
 
     $fed = [decimal] $fed_record.WALCL * 1000 * 1000
     $rem = [decimal] $rem_record.RESPPLLOPNWW * 1000 * 1000
