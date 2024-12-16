@@ -263,6 +263,8 @@ $rem_result = get-fred-series 'RESPPLLOPNWW' $date
 # $fed_result = get-fred-series 'WSHOSHO' $date
 $sp_result  = get-fred-series 'SP500'   $date
 
+$sp_result = $sp_result | Where-Object SP500 -NE 0
+
 if ($rrp_result.GetType().Name -eq 'String')
 {
     Write-Host 'Issue contacting markets.newyorkfed.org' -ForegroundColor Yellow
